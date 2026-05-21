@@ -1,0 +1,136 @@
+# API sources catalog — INDEX
+
+Каталог API endpoints для прямого programmatic доступа к данным. Дополняет `stat_sources/` (HTML/web) и `channels.md` (search strategies).
+
+## Зачем API когда есть WebFetch?
+
+WebFetch достаёт HTML-страницу, агент её парсит. API возвращает структурированный JSON — это:
+
+- **Структурированный output** — JSON вместо парсинга HTML
+- **Bulk queries** — «дай 100 результатов» одним запросом, не 100 страниц
+- **Filtering на стороне сервера** — `?industry=fintech&country=US&min_funding=10M`
+- **Real-time data** — котировки, on-chain метрики, live feeds
+- **Меньше токенов** — JSON компактнее HTML-страницы
+
+## Когда **не** использовать API
+
+- WebFetch HTML уже работает и данных хватает
+- Нужен ключ + у тебя его нет → используй HTML вариант источника
+- Free tier исчерпан → fallback на HTML или альтернативный источник
+- Простой однократный lookup → проще WebSearch
+
+## Структура каталога
+
+```
+api_sources/
+├── INDEX.md                    ← навигация (этот файл)
+├── README.md                   ← auth, free tiers, fallback protocol
+├── search/                     ← AI/web search APIs
+│   ├── brave_search.md         Brave Search API
+│   ├── tavily.md               Tavily (AI-first)
+│   ├── exa.md                  Exa.ai (semantic)
+│   ├── serpapi.md              SerpAPI (Google/Bing/etc)
+│   └── you_com.md              You.com Search API
+├── academic/                   ← scholarly research
+│   ├── semantic_scholar.md     200M papers, no auth
+│   ├── openalex.md             250M works, no auth
+│   ├── crossref.md             130M DOIs, no auth
+│   └── arxiv.md                preprints, no auth
+├── financial/                  ← economic / macro
+│   ├── fred.md                 FRED (Fed economic data)
+│   ├── world_bank.md           World Bank Indicators
+│   ├── sec_edgar.md            SEC EDGAR filings
+│   ├── oecd.md                 OECD SDMX
+│   └── alpha_vantage.md        Stocks/forex/crypto prices
+├── companies/                  ← company data
+│   ├── crunchbase.md           Crunchbase Basic API
+│   ├── opencorporates.md       OpenCorporates registry
+│   └── companies_house.md      UK Companies House
+├── crypto/                     ← on-chain & markets
+│   ├── coingecko.md            CoinGecko Public API
+│   ├── defillama.md            DefiLlama (no auth)
+│   ├── etherscan.md            Etherscan API
+│   └── dune.md                 Dune Analytics
+├── code/                       ← code / packages
+│   ├── github.md               GitHub Search API
+│   ├── stackexchange.md        Stack Exchange API
+│   ├── pypi.md                 PyPI JSON API
+│   └── npm.md                  npm Registry API
+├── social/                     ← community signals
+│   ├── reddit.md               Reddit JSON (no auth)
+│   ├── hn_algolia.md           HN Algolia (no auth)
+│   └── lemmy.md                Lemmy ActivityPub
+├── news/                       ← current events
+│   ├── newsapi.md              NewsAPI.org
+│   ├── gdelt.md                GDELT 2.0 (no auth)
+│   └── currents.md             Currents API
+├── stats/                      ← statistics
+│   ├── eurostat.md             Eurostat REST API
+│   ├── census_us.md            US Census API
+│   └── un_data.md              UN Data API
+└── domain_specific/            ← specialized
+    ├── pubmed.md               PubMed E-utilities
+    ├── clinicaltrials.md       ClinicalTrials.gov
+    ├── ema.md                  European Medicines Agency
+    ├── nasa.md                 NASA APIs
+    └── openweather.md          OpenWeather
+```
+
+## Quick reference
+
+### Free, no key required (priority sources for agents)
+
+Этим API не нужны ключи — агент может использовать сразу:
+
+| API | What | When |
+|---|---|---|
+| **Semantic Scholar** | 200M papers, citations | academic search |
+| **OpenAlex** | 250M scholarly works | citation graph |
+| **CrossRef** | 130M DOIs | DOI metadata |
+| **arXiv** | preprints | physics/CS/math papers |
+| **DefiLlama** | DeFi TVL/protocols | crypto research |
+| **CoinGecko** | crypto prices/markets | crypto data (rate-limited) |
+| **Reddit JSON** | Reddit posts | community signals |
+| **HN Algolia** | Hacker News search | tech discussions |
+| **World Bank** | global development | macro stats |
+| **SEC EDGAR** | US public filings | company financials |
+| **ClinicalTrials.gov** | trial registry | medical research |
+| **PubMed E-utilities** | biomedical literature | medical search |
+| **GDELT** | global events | news/sentiment |
+| **OpenAlex** | scholarly graph | research network analysis |
+| **PyPI / npm** | package metadata | tech stack research |
+
+### Free with key (one-time setup, then automatic)
+
+| API | Free tier | Setup |
+|---|---|---|
+| **FRED** | unlimited | https://fred.stlouisfed.org/docs/api/api_key.html |
+| **GitHub** | 5000 req/h authenticated | https://github.com/settings/tokens |
+| **Stack Exchange** | 10000 req/day | https://stackapps.com/apps/oauth/register |
+| **NewsAPI** | 100 req/day | https://newsapi.org/register |
+| **Alpha Vantage** | 25 req/day | https://www.alphavantage.co/support/#api-key |
+| **Etherscan** | 5 req/sec | https://etherscan.io/myapikey |
+
+### Paid (powerful but cost money)
+
+| API | Cost | Why pay |
+|---|---|---|
+| **Brave Search** | $3/1k queries | Google-quality, no bias toward Google products |
+| **Tavily** | $0/1k free, then paid | Built for AI agents, returns answers |
+| **Exa.ai** | $5/1k searches | Semantic search, neural |
+| **SerpAPI** | $50/mo | Google/Bing/DuckDuckGo unified |
+| **Crunchbase Basic** | $99/mo | Company data, funding rounds |
+
+## How to navigate this catalog
+
+1. **Identify your need:** what kind of data — papers, prices, filings, social signals?
+2. **Pick category folder** (search/academic/financial/...)
+3. **Read the relevant API file** — each has full reference: endpoint, auth, free tier, query examples
+4. **Use the example queries** as templates in your research
+5. **Document API call** in your `sources/NN.md` frontmatter (`channel: api-direct`, `access: api-free-no-key`)
+
+## See also
+
+- `channels.md` → channel **`api-direct`** — стратегия использования APIs в workflow
+- `stat_sources/` → HTML/web версия тех же источников (для fallback когда API не работает)
+- `subagents_v2.md` → как давать суб-агентам инструкции по API queries

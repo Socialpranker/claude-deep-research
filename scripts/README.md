@@ -1,0 +1,55 @@
+# Scripts
+
+Automation для catalog maintenance.
+
+## validate_endpoints.py
+
+Health-check all API endpoints in `references/api_sources/`.
+
+```bash
+pip install -r scripts/requirements.txt
+python scripts/validate_endpoints.py
+```
+
+Output: `scripts/output/endpoints_report.md`
+
+Flags:
+- `--json` — also write JSON report
+- `--strict` — exit code 1 if any endpoint dead (for CI)
+
+## sync_catalog.py
+
+Discover potential additions from upstream awesome-lists.
+
+```bash
+python scripts/sync_catalog.py
+python scripts/sync_catalog.py --upstream public-apis  # specific upstream
+python scripts/sync_catalog.py --limit 50  # show more per upstream
+```
+
+Output: `scripts/output/sync_report.md`
+
+## Manual workflow
+
+```bash
+# Weekly maintenance ritual:
+python scripts/validate_endpoints.py
+python scripts/sync_catalog.py
+
+# Review outputs in scripts/output/
+# Fix dead endpoints, propose additions via PR
+```
+
+## Automated via GitHub Actions
+
+See `.github/workflows/catalog-sync.yml` — runs every Sunday at 03:00 UTC.
+
+On schedule:
+1. Validate all endpoints
+2. Discover upstream additions
+3. If dead endpoints found OR significant new additions → open PR with reports
+4. Otherwise: just commit reports to `scripts/output/`
+
+## Output directory
+
+`scripts/output/` is `.gitignored` for local runs. GitHub Actions commits reports to a dedicated `reports/` branch.

@@ -1,0 +1,29 @@
+# GitHub Pages configuration
+# This file is processed by Jekyll on the gh-pages branch (if used)
+# or by GitHub Pages for the docs/ folder.
+
+title: Deep Research
+description: A structured 7-phase meta-research skill for Claude Code. 29 channels, 280+ stat sources, 75 report blocks.
+url: https://ivanterescheenko-ai.github.io
+baseurl: /claude-deep-research
+
+# SEO
+author: Ivan Tereshchenko
+twitter:
+  username: YOUR_TWITTER
+social:
+  name: Ivan Tereshchenko
+  links:
+    - https://github.com/ivanterescheenko-ai
+
+# Theme — we use custom HTML, but Jekyll needs something
+theme: jekyll-theme-cayman
+plugins:
+  - jekyll-seo-tag
+
+# Don't process these
+exclude:
+  - README.md
+  - CONTRIBUTING.md
+  - LICENSE
+  - PUBLISH.md

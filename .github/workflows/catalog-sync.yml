@@ -1,0 +1,104 @@
+name: Weekly Catalog Sync
+
+# Runs validate_endpoints.py and sync_catalog.py every Sunday at 03:00 UTC.
+# Commits reports to a dedicated branch for review.
+
+on:
+  schedule:
+    # Every Sunday at 03:00 UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch:  # Allow manual trigger from Actions tab
+
+jobs:
+  validate-and-sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r scripts/requirements.txt
+
+      - name: Validate API endpoints
+        id: validate
+        run: |
+          mkdir -p scripts/output
+          python scripts/validate_endpoints.py --json
+          echo "report_path=scripts/output/endpoints_report.md" >> $GITHUB_OUTPUT
+
+      - name: Sync catalog with upstream awesome-lists
+        id: sync
+        run: |
+          python scripts/sync_catalog.py
+          echo "sync_report_path=scripts/output/sync_report.md" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Check if reports have meaningful changes
+        id: check_changes
+        run: |
+          DEAD_COUNT=$(grep -c "❌" scripts/output/endpoints_report.md || echo 0)
+          NEW_COUNT=$(grep -c "Potential additions" scripts/output/sync_report.md || echo 0)
+          echo "dead_count=$DEAD_COUNT" >> $GITHUB_OUTPUT
+          echo "new_count=$NEW_COUNT" >> $GITHUB_OUTPUT
+          echo "Dead endpoints: $DEAD_COUNT"
+          echo "Potential new entries: $NEW_COUNT"
+
+      - name: Commit reports to dedicated branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Create or update reports branch
+          git checkout -B reports
+
+          # Copy reports to root for visibility
+          mkdir -p reports
+          cp scripts/output/endpoints_report.md reports/endpoints_report.md
+          cp scripts/output/sync_report.md reports/sync_report.md 2>/dev/null || true
+
+          git add reports/
+          git diff --cached --quiet && echo "No changes" || git commit -m "chore(reports): weekly sync $(date -u +%Y-%m-%d)"
+          git push origin reports --force
+
+      - name: Open PR if dead endpoints found
+        if: steps.check_changes.outputs.dead_count != '0' && steps.check_changes.outputs.dead_count != '0\n'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          title: "🔍 Weekly sync: dead endpoints detected"
+          body: |
+            Weekly catalog validation found **${{ steps.check_changes.outputs.dead_count }} dead endpoints**.
+
+            See [reports branch](https://github.com/${{ github.repository }}/blob/reports/reports/endpoints_report.md) for details.
+
+            Please review and either:
+            - Update the endpoint URL if API moved
+            - Mark as deprecated if API discontinued
+            - Add fallback notes if temporarily down
+
+            For potential new entries discovered from upstream awesome-lists, see [sync_report.md](https://github.com/${{ github.repository }}/blob/reports/reports/sync_report.md).
+          branch: weekly-sync/dead-endpoints
+          labels: maintenance, automated
+
+  status-badge:
+    needs: validate-and-sync
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Report status
+        run: |
+          if [ "${{ needs.validate-and-sync.result }}" = "success" ]; then
+            echo "✅ Weekly sync completed successfully"
+          else
+            echo "❌ Weekly sync failed — investigate logs"
+          fi

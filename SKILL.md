@@ -1,0 +1,232 @@
+---
+name: deep-research
+description: Meta-research под вопрос или решение. Веб-поиск, академические источники, Q&A отчёт; каждый источник — отдельный файл с цитатами и метаданными для повторного использования. Использовать когда нужна основа под решение, для деск-ресёрча, валидации гипотезы или чтобы понять как устроен X. Триггеры — "deep research", "глубокое исследование", "проведи ресёрч", "сделай ресёрч", "изучи тему", "разбери тему", "исследуй", "копни глубоко", "deep dive", "ресёрчни".
+---
+
+# Deep Research — meta-research с дисциплиной
+
+Серьёзное многошаговое исследование под вопрос или решение. Каждый источник = файл, отчёт построен как Q&A, тезисы атомарны и пере-используемы.
+
+## Когда применять
+
+- Прямо просит «deep research / глубокое исследование / проведи ресёрч / изучи тему / разбери».
+- Сравнить N институций, продуктов, методологий, рынков (НО: если N конкурентов по фиксированной матрице — это competitive-teardown, не сюда).
+- Подготовить материал для стратегии, бизнес-плана, доклада, статьи.
+- Проверить гипотезу или валидировать решение через внешние данные.
+- Meta-research — «понять как устроен X», «карта области Y», ответить на серию вопросов.
+
+## Когда НЕ применять
+
+- Быстрая фактоверка («когда родился Моцарт») — отвечай напрямую, без скилла.
+- Сравнение N конкурентов по структурированной 12-dimension матрице → `competitive-teardown`.
+- Research под Anthropic SDK / Claude API → `claude-api`.
+- Brainstorm без поиска данных → `brainstorming` / `grill-me`.
+- Ответ уже в проекте — сначала grep/чтение, потом решай нужен ли веб-поиск.
+
+## Глубина — определяется по теме
+
+**Жёсткого дефолта нет.** Выбирай каждый раз по сложности вопроса и стоимости решения, которое поддерживаешь.
+
+| Режим | Источников | Суб-агентов | Когда |
+|---|---|---|---|
+| shallow | 5–7 | 0 | первичная навигация, тема знакома, low-stakes решение |
+| medium | 12–18 | 2–3 | нетривиальная тема, среднее решение |
+| deep | 25–35+ | 4–5 | high-stakes решение, стратегия, серьёзный анализ |
+
+Объяви выбранный режим в начале и обоснуй: «делаю medium — тема нетривиальна, решение middle-stakes».
+
+## Перед стартом — discover existing
+
+ДО фазы reframing проверь что уже есть в проекте. Опциональное — если файлов/папок нет, иди дальше.
+
+1. **Куда сохранять** (см. секцию ниже) — определи целевую папку.
+2. **Существующие ресёрчи**: если целевая папка уже есть, перечисли содержимое. Если есть похожий slug → спроси «это update?». Если да — режим update (см. ниже).
+3. **CLAUDE.md / CLAUDE.local.md**: если есть — прочитай, учти в reframing (терминология проекта, workflow, кросс-референсы).
+4. **memory/MEMORY.md**: если есть — прочитай индекс, поищи упоминания темы. Учти в reframing («в памяти X зафиксировано — мы это подтверждаем или пересматриваем?»).
+
+Цель: не дублировать сделанное. Не из любопытства, не «на всякий случай ещё раз».
+
+## Куда сохранять — 3-уровневая логика
+
+Папка-цель определяется автоматически. Не хардкодь.
+
+```
+Уровень 1 — явный сигнал:
+  CLAUDE.md / CLAUDE.local.md упоминают research-папку → используй её
+  Существует одна из: research/, 06_Деск-ресёрч/, docs/research/, notes/research/
+  → используй существующую
+
+Уровень 2 — автодетекция типа проекта:
+  pyproject.toml / package.json / Cargo.toml / go.mod / mix.exs → tech → research/
+  Только .md / .pdf / .docx без манифестов → notes/гуманитарный → 06_Деск-ресёрч/
+
+Уровень 3 — фоллбэк:
+  Не git-репо или пустая папка → ~/deep-research/<slug>/ (глобальная домашняя)
+```
+
+Покажи выбранный путь ОДИН раз: «Сохраню в `research/<slug>/`. Ок?» Дальше пиши молча.
+
+## Режим update
+
+Если пользователь говорит `update <slug>` или «обнови ресёрч <тема>»:
+
+1. Найди существующий `<целевая_папка>/<slug>/` — прочитай `plan.md` и последний `<дата>_<genre>.md`.
+2. Перечитай существующие `sources/` — какие источники у нас есть.
+3. Сформулируй дельту: что нового искать, что устарело, что подтвердилось.
+4. Делай только дельта-исследование, не повторяй уже собранное.
+5. Новый `plan.md` имеет `version: update-N`, `parent: <дата>_<genre>.md`, заполненную секцию 16 (changelog).
+6. Новый отчёт `<новая_дата>_<genre>.md` рядом со старым.
+7. Старый отчёт в frontmatter получает `status: superseded by <новая_дата>_<genre>.md`.
+8. Changelog встроен в `plan.md` секцию 16 — отдельный `_changelog.md` не создаётся.
+
+## Workflow — 7 фаз (включая опциональную 3.5)
+
+Детали каждой фазы — в `references/workflow.md`. Здесь high-level.
+
+1. **Reframing** — переписать вопрос, зафиксировать решение, сформулировать 2–4 опровергаемые гипотезы. См. `references/question_reframing.md`.
+2. **Genre & block selection** — определить жанр отчёта (qa/explainer/decision/landscape/validation/custom) и набор блоков. Подтвердить пользователю одной строкой. См. `references/genres.md` и `references/blocks/INDEX.md`.
+3. **Plan** — записать `plan.md` (5 секций: HEADER → SCOPE → STRUCTURE → EXECUTION → TRACKING). Включает: user context, time-box, acceptance criteria, discovered existing, glossary, жанр + blocks + rationale, гипотезы, risk register, subtopic↔blocks mapping, information sourcing strategy (каналы + stat-источники + API endpoints), opposition queries, stop-criteria, notes для tracking. См. `workflow.md` → Фаза 3 для полного шаблона.
+3.5. **Capability Discovery** (опциональная для shallow, рекомендуется для medium, обязательна для deep) — audit env vars для API ключей, map подтемы → доступные APIs, fallback на upstream awesome-lists для unknown gaps, сводный отчёт пользователю. См. `references/capability_discovery.md`.
+4. **Поиск** — 4 шага: (4.0) **Source Dispatch** — прогнать каждый подвопрос через `source_dispatch.md` matrix, заполнить plan.md секцию 12 с per-subquestion primary/secondary/fallback каналами. (4.1) Launch — для medium/deep: суб-агенты `subagent_type=Explore` в параллель, для shallow: главный поток сам. (4.2) Fetch & dedup. (4.3) Save в `sources/NN_slug.md`. См. `references/source_dispatch.md` и `references/subagents_v2.md`.
+5. **Скоринг + триангуляция** — каждый источник оценить по 3 осям (Credibility/Recency/Bias). Каждый тезис в выводах — ≥3 независимых источника разного типа. См. `references/source_scoring.md`.
+6. **Синтез + adversarial pass** — собрать `<date>_<genre>.md` из выбранных блоков, прогнать через 4 вопроса самокритики, добавить counter-arguments. Для medium/deep — обязательно. См. `references/adversarial_pass.md` и `references/blocks/`.
+
+## Stop-criteria — по содержанию, не по бюджету
+
+Бюджета на количество WebSearch/WebFetch **нет**. Качество > скорость.
+
+**Останавливайся когда:**
+- Все 2–4 гипотезы либо подтверждены ≥3 разнотипными источниками, либо опровергнуты ≥3, либо явно отмечены как «данных мало».
+- Прошёл целевой поиск противоположной позиции (≥1 запрос вида «X criticism / counter-evidence / against X / problems with X») и проанализировал результаты.
+- Покрыты 4+ типа источников: первичные / академические / отраслевые медиа / обсуждения или противники.
+- НЕТ роста новой информации — последние 3–5 источников повторяют то же, что уже есть.
+
+**Не останавливайся:**
+- Источники друг другу противоречат → копай за причиной противоречия.
+- Все источники одного типа → добей разнообразие целевым поиском.
+- Есть сильный контр-аргумент без своего опровержения/подтверждения → найди.
+- Не было ни одного целевого поиска оппозиции → сделай.
+
+**Тупик:**
+- Третий подряд поиск возвращает источники total < 8 → тема плохо исследована или плохо ищем. Останавливайся, фиксируй в Open Questions «литература слабая», предлагай альтернативные пути (интервью, эксперимент).
+
+## Output structure
+
+Целевая папка `<root>/<slug>/`:
+
+```
+<slug>/
+├── plan.md                          # Фаза 3 — план + changelog (секция 16) + notes (секция 15)
+├── sources.csv                      # индекс всех источников с оценками
+├── sources/                         # один файл = один источник (с метаданными + цитаты)
+│   ├── 01_<short-slug>.md
+│   ├── 02_<short-slug>.md
+│   └── ...
+├── findings/                        # атомарные тезисы (опционально, для крупных)
+│   ├── F1_<short>.md
+│   └── ...
+└── <YYYY-MM-DD>_<genre>.md          # финальный отчёт — суффикс по жанру
+```
+
+**Note:** отдельный `_changelog.md` не создаётся — changelog встроен в `plan.md` секцию 16 (заполняется только для update-режима).
+
+**Имя финального отчёта:** суффикс по жанру
+- Q&A: `<date>_qa.md`
+- Explainer: `<date>_explainer.md`
+- Decision: `<date>_decision.md`
+- Landscape: `<date>_landscape.md`
+- Validation: `<date>_validation.md`
+- Custom: `<date>_custom.md`
+
+**Шаблоны:**
+- `sources/NN.md` — см. `references/source_scoring.md`
+- `<date>_<genre>.md` — собирается из блоков, см. `references/genres.md` (пресеты) и `references/blocks/` (шаблоны блоков)
+- `findings/FN.md` — атомарный тезис, см. `references/blocks/close.md` (блок Z6)
+
+## После завершения — finish-up
+
+1. Покажи путь markdown-ссылкой: `[research/<slug>/2026-XX-XX_<genre>.md](research/<slug>/2026-XX-XX_<genre>.md)`.
+2. Краткое резюме в чат: 3 ключевых ответа + 1 главный контр-аргумент + что не нашли (5–7 строк).
+3. Предложи 2–3 следующих ресёрча, которые логически следуют.
+4. **Если в проекте есть `memory/`** — предложи 1–3 memory candidates:
+   ```
+   По итогам — кандидаты в memory:
+   - [project] Тезис X (confidence: high, 3 источника) → файл memory/<topic>.md
+   - [reference] Авторитетный источник Y по теме Z
+
+   Сохранить?
+   ```
+5. **Humanizer.** Если в системе есть `anthropic-skills:humanizer-ru` — вызови его на финальный `<date>_<genre>.md` для чистки канцелярита. Опциональное.
+
+## Что НЕ делать
+
+- Не пропускать `discover existing` — рискуешь дублировать готовый ресёрч.
+- Не пропускать reframing — даже если запрос «вроде понятен».
+- Не выводить только в чат — всегда сохраняй файлы.
+- Не обходить ограничения WebFetch через bash/curl.
+- Не использовать источники с total < 8 как основу для выводов.
+- Не пропускать adversarial pass в medium/deep.
+- Не использовать `subagent_type=general-purpose` если хватает `Explore` (Explore быстрее и read-only).
+- Не оставлять «висящие» утверждения без ссылки на конкретный `sources/NN.md`.
+- Не запускать суб-агентов последовательно — только параллельно в одном сообщении.
+- Не сжимать sources/ в один файл — теряется поиск и переиспользование между ресёрчами.
+
+## Slug format
+
+URL-friendly: латиница, цифры, дефисы. Пример:
+- «Что такое open-storage в музеях» → `museum-open-storage`
+- «Polymarket vs Manifold ликвидность» → `polymarket-manifold-liquidity`
+- «Cooper Hewitt — методология музея-лаборатории» → `cooper-hewitt-lab-method`
+
+Если slug не очевиден — сгенерируй и покажи в начале фазы 2 для подтверждения.
+
+## References — когда читать
+
+Прогрессивная подгрузка: загружай файл когда дошёл до фазы — не превентивно. При большой block library это критично для контекста.
+
+**Базовые (всегда):**
+- `references/workflow.md` — детали 7 фаз (включая опц. 3.5) (читать в начале medium/deep).
+- `references/question_reframing.md` — шаблоны Фазы 1.
+- `references/genres.md` — пресеты блоков 6 жанров + эвристика выбора (Фаза 2) + каналы по жанрам.
+- `references/blocks/INDEX.md` — индекс 75 блоков по 10 категориям (после выбора жанра).
+- `references/channels.md` — 29 каналов поиска (включая api-direct) с query patterns, paywall fallbacks (Фаза 3-4).
+- `references/stat_sources/INDEX.md` — навигационная карта 33 категорий статистических источников (Фаза 3-4).
+- `references/api_sources/INDEX.md` — каталог 30+ API endpoints (10 категорий) для programmatic доступа (Фаза 3-4).
+- `references/capability_discovery.md` — workflow фазы 3.5: env vars audit + capability mapping + discovery (medium/deep).
+- `references/awesome_lists_registry.md` — upstream awesome-lists для discovery когда мой каталог не покрыл (Фаза 3.5).
+- `references/source_dispatch.md` — **recommendation engine** для Phase 4.0: matrix «сигнал в подвопросе → primary/secondary/fallback каналы», decomposition recipes для типовых тем, discovery patterns когда каталог не покрыл. Обязательное чтение перед launch sub-agents.
+
+**Категорийные файлы (только нужные для выбранного жанра/blocks):**
+- `references/blocks/frame.md` — F1-F8: TL;DR, scope, claim, metadata.
+- `references/blocks/explain.md` — E1-E14: mental-model, glossary, mechanism.
+- `references/blocks/compare.md` — C1-C13: matrices, scoring, trade-offs.
+- `references/blocks/map.md` — M1-M12: profiles, positioning, trends.
+- `references/blocks/validate.md` — V1-V10: falsification, evidence grades.
+- `references/blocks/analyze.md` — A1-A13: data tables, SWOT, root cause.
+- `references/blocks/close.md` — Z1-Z10: counter-args, open Q, next research.
+- `references/blocks/people.md` — P1-P7: persona, journey, incentives.
+- `references/blocks/numbers.md` — N1-N8: metrics, market sizing, forecasts.
+- `references/blocks/context.md` — X1-X7: regulatory, geo, culture.
+
+**По фазам:**
+- `references/source_scoring.md` — оценка источников + шаблон `sources/NN.md` с `channel:` и `access:` (Фаза 5).
+- `references/subagents_v2.md` — паттерн суб-агентов с CHANNELS TO USE (Фаза 4, medium/deep).
+- `references/adversarial_pass.md` — 4 вопроса самокритики (Фаза 6, medium/deep).
+
+**Stat sources (Фаза 4 — точечно по теме):**
+- `references/stat_sources/core/*.md` — 14 cross-industry категорий (gov_macro, companies_public/private, consulting_industry, consumer_digital, crypto, data_aggregators, media_entertainment, health, education, climate_env, science, transport_travel, sports_fitness).
+- `references/stat_sources/industries/*.md` — 19 отраслевых файлов (energy, auto, pharma, retail, manufacturing, real_estate, insurance, banking, telecom, logistics, agriculture, defense, it_services, cybersecurity, advertising, hr_workforce, gig_economy, esg_sustainability, infrastructure).
+- Progressive loading: читай INDEX.md, потом только нужные категории под подтему.
+
+**API sources (Фаза 4 — для programmatic data access):**
+- `references/api_sources/search/` — Brave, Tavily, Exa, SerpAPI, You.com (поисковые APIs).
+- `references/api_sources/academic/` — Semantic Scholar, OpenAlex, CrossRef, arXiv (free, no key).
+- `references/api_sources/financial/` — FRED, World Bank, SEC EDGAR, OECD, Alpha Vantage.
+- `references/api_sources/companies/` — Crunchbase, OpenCorporates, Companies House.
+- `references/api_sources/crypto/` — CoinGecko, DefiLlama, Etherscan, Dune.
+- `references/api_sources/code/` — GitHub, Stack Exchange, PyPI, npm.
+- `references/api_sources/social/` — Reddit JSON, HN Algolia, Lemmy.
+- `references/api_sources/news/` — NewsAPI, GDELT, Currents.
+- `references/api_sources/stats/` — Eurostat, Census US, UN Data.
+- `references/api_sources/domain_specific/` — PubMed, ClinicalTrials, EMA, NASA, OpenWeather.
+- Auth через environment variables — скилл сам не хранит ключи. Free no-key APIs приоритетны.
