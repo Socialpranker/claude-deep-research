@@ -80,7 +80,7 @@ time_box_hard: <Y hours>
 
 ## 0. User context
 
-- **Кто спрашивает / для кого:** <Ivan as <role>, audience for report, ...>
+- **Кто спрашивает / для кого:** <user role, audience for report, ...>
 - **Зачем (бизнес/личный мотив):** <real underlying motivation>
 - **Что уже знает:** <baseline knowledge level — beginner / informed / expert>
 - **Как будет использовать отчёт:** <принять решение к <date> / включить в pitch / поделиться с командой / личное понимание>

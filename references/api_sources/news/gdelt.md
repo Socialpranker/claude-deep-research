@@ -53,13 +53,13 @@ GET /doc/doc?query={query}&mode=TimelineSourceCountry&timespan=1y&format=json
 **Phase 4 — global narrative tracking:**
 
 ```
-GET /doc/doc?query=polymarket&mode=TimelineVol&timespan=2y&format=json
+GET /doc/doc?query=remote+work&mode=TimelineVol&timespan=2y&format=json
 ```
 
 **Phase 4 — sentiment по странам:**
 
 ```
-GET /doc/doc?query=prediction+markets&mode=TimelineTone&timespan=1y&format=json
+GET /doc/doc?query=energy+transition&mode=TimelineTone&timespan=1y&format=json
 ```
 
 ## Use cases

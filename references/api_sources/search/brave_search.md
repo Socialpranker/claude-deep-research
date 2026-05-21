@@ -79,13 +79,13 @@ GET https://api.search.brave.com/res/v1/web/search?q={query}&goggles_id={GOGGLE_
 **Phase 4 — landscape research:**
 
 ```
-GET /web/search?q=prediction%20markets%20regulatory%20status%20US%202026&count=20&freshness=py
+GET /web/search?q=eu%20ai%20act%20compliance%20timeline%202026&count=20&freshness=py
 ```
 
 **Phase 4 — recent news:**
 
 ```
-GET /news/search?q=polymarket%20regulatory&count=10&freshness=pm
+GET /news/search?q=duckdb%20release&count=10&freshness=pm
 ```
 
 ## Limitations

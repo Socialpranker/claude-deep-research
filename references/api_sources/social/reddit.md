@@ -63,13 +63,13 @@ GET https://www.reddit.com/user/{username}/comments.json
 **Phase 4 — community opposition:**
 
 ```
-GET https://www.reddit.com/r/Polymarket/search.json?q=lost+money&restrict_sr=1&sort=relevance&limit=50
+GET https://www.reddit.com/r/kubernetes/search.json?q=migration+regret&restrict_sr=1&sort=relevance&limit=50
 ```
 
 **Phase 4 — broad search:**
 
 ```
-GET https://www.reddit.com/search.json?q=polymarket+market+maker+experience&sort=top&t=year
+GET https://www.reddit.com/search.json?q=postgres+logical+replication+experience&sort=top&t=year
 ```
 
 ## Limitations

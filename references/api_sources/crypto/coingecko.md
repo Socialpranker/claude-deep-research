@@ -21,7 +21,7 @@ GET /simple/price?ids=bitcoin,ethereum&vs_currencies=usd,eur
 
 ```
 GET /coins/{id}?localization=false&tickers=false&community_data=true
-# id: e.g., 'bitcoin', 'ethereum', 'polymarket' (look up via /coins/list)
+# id: e.g., 'bitcoin', 'ethereum', 'solana' (look up via /coins/list)
 ```
 
 ### Historical

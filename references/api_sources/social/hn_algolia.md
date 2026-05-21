@@ -47,13 +47,13 @@ GET /items/{id}
 **Phase 4 — tech opinion landscape:**
 
 ```
-GET /search?query=polymarket&tags=story&hitsPerPage=50
+GET /search?query=duckdb&tags=story&hitsPerPage=50
 ```
 
 **Phase 4 — recent only:**
 
 ```
-GET /search_by_date?query=prediction+markets&tags=story&numericFilters=created_at_i>1704067200
+GET /search_by_date?query=vector+database&tags=story&numericFilters=created_at_i>1704067200
 ```
 
 ## Limitations

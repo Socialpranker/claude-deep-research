@@ -95,7 +95,7 @@ POST https://api.tavily.com/extract
 ```
 POST /search
 {
-  "query": "polymarket fee structure market makers edge",
+  "query": "postgres logical replication performance trade-offs",
   "search_depth": "advanced",
   "include_answer": true,
   "include_domains": ["arxiv.org", "ssrn.com", "researchgate.net"],
@@ -108,7 +108,7 @@ POST /search
 ```
 POST /search
 {
-  "query": "polymarket market makers losses retail trader",
+  "query": "kubernetes migration regrets postmortem",
   "search_depth": "advanced",
   "include_answer": false,
   "include_domains": ["reddit.com", "twitter.com", "medium.com"]

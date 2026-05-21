@@ -20,16 +20,16 @@
 <br>
 
 ```
-You: investigate market-maker edge on Polymarket's fee structure
+You: investigate the trade-offs between Postgres logical replication and CDC tooling
 
 Claude:  ✓ Reframed your question (3 hypotheses)
-         ✓ Picked genre: custom (explainer + validation)
+         ✓ Picked genre: decision (comparison + validation)
          ✓ Wrote plan.md (17 sections)
          ✓ Checked your env: 4 APIs available, 2 fallback to HTML
          ✓ Launched 4 sub-agents across 12 channels
          ✓ Saved 23 sources to sources/ with quotes
          ✓ Ran adversarial pass (3 counter-arguments)
-         ✓ Report ready: research/polymarket-mm-edge/2026-05-21_custom.md
+         ✓ Report ready: research/postgres-replication-vs-cdc/2026-05-21_decision.md
 ```
 
 </div>
@@ -233,47 +233,47 @@ GitHub Actions cron validates all endpoints + discovers upstream additions:
 
 ---
 
-## Example: Polymarket research
+## Example folder
 
-Real output for *"investigate market-maker edge on Polymarket's fee structure"*:
+Sample output for a typical `decision`-genre research:
 
 ```
-research/polymarket-mm-edge/
+research/<topic-slug>/
 ├── plan.md                              # 17-section plan
 ├── sources.csv                          # Index with C/R/B scoring
 ├── sources/                             # One file per source
-│   ├── 01_polymarket-docs.md           # Primary, total=14
-│   ├── 02_dune-dashboard-mm.md         # Primary, total=13
-│   ├── 03_arxiv-lmsr-paper.md          # Academic, total=12
-│   ├── 04_reddit-polymarket-loss.md    # Forum, total=9 (opposition)
+│   ├── 01_vendor-docs.md                # Primary, total=14
+│   ├── 02_benchmark-paper.md            # Academic, total=12
+│   ├── 03_industry-report.md            # Industry, total=13
+│   ├── 04_forum-thread.md               # Forum, total=9 (opposition)
 │   └── ... (19 more)
 ├── findings/
-│   ├── F1_fee-asymmetry.md             # Atomic thesis, confidence: high
-│   └── F2_volume-edge.md               # confidence: medium
-└── 2026-05-21_custom.md                # Final report
+│   ├── F1_<atomic-thesis>.md            # confidence: high
+│   └── F2_<atomic-thesis>.md            # confidence: medium
+└── 2026-05-21_decision.md               # Final report
 ```
 
-Final report structure (from the blocks chosen in plan.md):
+Final report structure (assembled from the blocks chosen in plan.md):
 
 ```markdown
 ## TL;DR
-- Maker fees are asymmetric vs takers [confidence: high]
-- Edge exists conditionally on volume ≥ $X [confidence: medium]
-- Retail typically can't extract this edge [confidence: high]
+- Claim A holds under condition X [confidence: high]
+- Claim B holds conditionally on threshold Y [confidence: medium]
+- Claim C is disputed by opposition sources [confidence: low]
 
 ## Mental model
-[How Polymarket's LMSR + fee structure works...]
+[How the underlying mechanism works...]
 
 ## Falsification criteria
 What would disprove H1, H2, H3...
 
 ## Verdict conditional
-Edge exists IF: Y volume + Z latency
-Edge doesn't exist OTHERWISE: fees > spread
+Recommendation IF: <conditions met>
+Different recommendation OTHERWISE: <conditions broken>
 
 ## Counter-arguments (steel-man)
-CA1: "Edge eaten by slippage in thin markets" [source: s09]
-     → Our answer: only in markets < $X depth...
+CA1: "<the strongest opposing claim>" [source: s09]
+     → Our answer: <conditions under which CA1 fails>
 CA2: ...
 ```
 
@@ -321,7 +321,7 @@ Yes — on Claude Desktop with Skills enabled. Also works manually with any LLM 
 <details>
 <summary><b>What's a research output look like?</b></summary>
 
-See the [Polymarket example](#example-polymarket-research) above. TL;DR: a folder with `plan.md` + `sources/NN.md` per source + `findings/FN.md` atomic theses + final `<date>_<genre>.md` report.
+See the [example folder](#example-folder) above. TL;DR: a folder with `plan.md` + `sources/NN.md` per source + `findings/FN.md` atomic theses + final `<date>_<genre>.md` report.
 
 Every claim in the final report links to a specific `sources/NN.md` file.
 
@@ -426,7 +426,7 @@ git clone https://github.com/ivanterescheenko-ai/claude-deep-research.git ~/.cla
 
 <div align="center">
 
-### Built by [Ivan Tereshchenko](https://github.com/ivanterescheenko-ai) · [MIT License](LICENSE) · [Roadmap](https://github.com/ivanterescheenko-ai/claude-deep-research/discussions)
+### Built by [ivanterescheenko-ai](https://github.com/ivanterescheenko-ai) · [MIT License](LICENSE) · [Roadmap](https://github.com/ivanterescheenko-ai/claude-deep-research/discussions)
 
 **If this skill saves you time, [give it a star](https://github.com/ivanterescheenko-ai/claude-deep-research)** — it's the only metric I check.
 

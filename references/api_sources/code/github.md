@@ -58,19 +58,19 @@ GET /repos/{owner}/{repo}/contents/{path}?ref={branch}
 **Phase 4 — find implementations:**
 
 ```
-GET /search/repositories?q=prediction+market+language:typescript+stars:>100&sort=stars
+GET /search/repositories?q=vector+database+language:rust+stars:>100&sort=stars
 ```
 
 **Phase 4 — find discussions/issues:**
 
 ```
-GET /search/issues?q=polymarket+market+maker+is:issue
+GET /search/issues?q=postgres+logical+replication+is:issue
 ```
 
 **Phase 4 — read implementation source:**
 
 ```
-GET /repos/Polymarket/clob-server/contents/README.md
+GET /repos/duckdb/duckdb/contents/README.md
 ```
 
 ## Useful qualifiers

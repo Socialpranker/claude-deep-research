@@ -125,7 +125,7 @@ Sports stats, esports, fitness aggregates.
 
 ### Pinnacle
 - Pinnacle.com — sharp betting markets, often accurate predictions
-- Polymarket (`polymarket.com`) — prediction markets для sports + everything else
+- Major prediction-market platforms (Kalshi, Manifold, etc.) — sports markets among other categories
 
 ## Quick reference
 

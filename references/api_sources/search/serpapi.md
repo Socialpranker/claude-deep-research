@@ -89,22 +89,22 @@ GET https://serpapi.com/search.json?q={query}&engine=google_trends&data_type=TIM
 
 ## Example queries для deep-research
 
-**Phase 4 — Russian search:**
+**Phase 4 — localized search (e.g. German):**
 
 ```
-GET /search.json?q=Polymarket+регулирование+2026&engine=google&gl=ru&hl=ru
+GET /search.json?q=Datenresidenz+DSGVO+2026&engine=google&gl=de&hl=de
 ```
 
 **Phase 4 — Scholar:**
 
 ```
-GET /search.json?q=prediction+market+microstructure&engine=google_scholar&num=20
+GET /search.json?q=vector+database+benchmarking&engine=google_scholar&num=20
 ```
 
 **Phase 4 — News trend over time:**
 
 ```
-GET /search.json?q=polymarket&engine=google_news&tbs=qdr:m
+GET /search.json?q=postgres+18&engine=google_news&tbs=qdr:m
 ```
 
 ## Engines available

@@ -8,7 +8,7 @@
 
 ## Принципы
 
-1. **Источник выбирается под подвопрос, не под тему целиком.** Тема «CBD market in EU» декомпозируется на 5-8 подвопросов, и каждый получает свой dispatch.
+1. **Источник выбирается под подвопрос, не под тему целиком.** Тема «vertical farming market in EU» декомпозируется на 5-8 подвопросов, и каждый получает свой dispatch.
 2. **Каждый подвопрос → минимум 2 канала разных типов** (требование триангуляции из Phase 5). Если один канал — это уже флаг к адверсариал-пассу.
 3. **Primary = ожидаемо самый сильный по credibility/recency.** Secondary = независимая проверка. Fallback = если primary недоступен.
 4. **Открытые API > HTML scraping.** Если для подвопроса есть API из `api_sources/` — он primary. HTML только если API нет.
@@ -46,7 +46,7 @@
 
 ## Discovery patterns — когда каталога не хватает
 
-Каталог `stat_sources/` + `api_sources/` покрывает базовые domains, но **редкие темы** (cannabis research, niche industries, esoteric academic fields) требуют поиска *новых источников* в runtime. Алгоритм:
+Каталог `stat_sources/` + `api_sources/` покрывает базовые domains, но **редкие темы** (niche industries, esoteric academic fields, region-specific topics) требуют поиска *новых источников* в runtime. Алгоритм:
 
 ### 1. GitHub topic search
 ```
@@ -58,7 +58,7 @@ https://github.com/search?q=topic:<keyword>+sort:stars
 - Open-source datasets под темой
 - Tools/libraries (значит есть API или ETL pipeline)
 
-**Пример:** Тема «cannabis market» → `github.com/topics/cannabis` → `awesome-cannabis-research` → 23 dataset ссылки которые не в нашем каталоге.
+**Пример:** Тема «satellite imagery» → `github.com/topics/satellite-imagery` → `awesome-satellite-imagery-datasets` → 30+ dataset ссылок которые не в нашем каталоге.
 
 ### 2. Awesome-lists registry
 `references/awesome_lists_registry.md` уже содержит 25+ кураторских списков. **В Phase 4 первым делом** проверь его на тему:
@@ -200,30 +200,30 @@ https://www.npmjs.com/search?q=<topic>
 ```markdown
 ## 12. Information sourcing strategy
 
-### Подвопрос Q1: «What's the EU CBD market size and growth rate?»
-- **Primary:** industry-reports → search "EU CBD market" Statista alt + Brightfield Group public summaries
-- **Secondary:** data-statistical-gov → Eurostat retail-sales NACE codes for "other food products"
-- **Fallback:** web-general → top CBD company annual reports (Curaleaf, GW Pharma)
+### Подвопрос Q1: «What's the EU vertical farming market size and growth rate?»
+- **Primary:** industry-reports → search "EU vertical farming market" agri-tech analyst houses (AgFunder, Plenty/Infarm public summaries)
+- **Secondary:** data-statistical-gov → Eurostat agricultural production NACE codes A.01 for greenhouse/protected cultivation
+- **Fallback:** web-general → top EU vertical farming company annual reports (Infarm, Jungle, Nordic Harvest)
 - **Decomposition note:** classic «market analysis» recipe — adding Q1b «top EU players» and Q1c «forecast 2025-2030»
 
-### Подвопрос Q2: «Is CBD effective for chronic pain?»
-- **Primary:** academic → OpenAlex + Semantic Scholar with API key, Cochrane reviews
-- **Secondary:** domain-specific → PubMed, ClinicalTrials.gov for active trials
-- **Fallback:** preprint-servers → bioRxiv recent (last 12mo)
-- **Adversarial pre-flag:** retraction-watch, contradicting trials
+### Подвопрос Q2: «Is vertical farming economically viable at scale?»
+- **Primary:** academic → OpenAlex + Semantic Scholar with API key, "controlled environment agriculture" reviews
+- **Secondary:** industry-reports → unit economics analyses from AgFunder Network, McKinsey AgTech
+- **Fallback:** forum-discussion → r/verticalfarming, AgTech Twitter, conference proceedings (Indoor Ag-Con)
+- **Adversarial pre-flag:** bankruptcies (Infarm 2024 restructuring, AeroFarms Chapter 11), failure-mode papers
 
-### Подвопрос Q3: «What's the regulatory status of CBD across EU member states?»
-- **Primary:** regulatory-legal → EUR-Lex Novel Food Regulation 2015/2283 + EMA guidance
-- **Secondary:** per-country → national regulators (BfArM Germany, AIFA Italy, MHRA UK для post-Brexit context)
-- **Fallback:** news-current → Reuters Legal, Politico EU on CBD policy
+### Подвопрос Q3: «What's the regulatory status of vertical farming across EU member states?»
+- **Primary:** regulatory-legal → EUR-Lex CAP (Common Agricultural Policy) on controlled environment, EFSA food safety guidance
+- **Secondary:** per-country → national agriculture ministries (BMEL Germany, MASAF Italy, DEFRA UK для post-Brexit context)
+- **Fallback:** news-current → Reuters Sustainability, Politico EU on AgTech policy
 
 ### Discovery executed:
-- ✓ Checked awesome_lists_registry → found `awesome-cannabis-research` (Tier 2)
-- ✓ GitHub topic search `topic:cannabis` → 12 datasets, 3 with EU focus
-- ✓ HuggingFace datasets search → 2 CBD trial datasets
+- ✓ Checked awesome_lists_registry → found `awesome-agtech` and `awesome-agriculture` (Tier 2)
+- ✓ GitHub topic search `topic:vertical-farming` → 8 datasets, 2 with EU focus
+- ✓ HuggingFace datasets search → 1 controlled-environment-agriculture dataset
 
 ### Gaps noted:
-- No EU-wide retail tracker data — accepting industry-report estimates with caveat
+- No EU-wide vertical-farming production tracker — accepting industry-report estimates with caveat
 - No real-time regulatory feed — manual check per member state needed
 ```
 

@@ -100,7 +100,7 @@ GET /works?filter=concepts.id:{concept-id}&per-page=200
 **Phase 4 — get all recent papers in a niche concept:**
 
 ```
-GET /works?filter=concepts.display_name.search:prediction+markets,publication_year:2022-2026,is_oa:true&per-page=100&mailto=ivan@example.com
+GET /works?filter=concepts.display_name.search:vertical+farming,publication_year:2022-2026,is_oa:true&per-page=100&mailto=research@example.com
 ```
 
 **Phase 4 — citation graph of seminal work:**

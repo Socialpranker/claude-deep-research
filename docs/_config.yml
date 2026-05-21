@@ -8,11 +8,9 @@ url: https://ivanterescheenko-ai.github.io
 baseurl: /claude-deep-research
 
 # SEO
-author: Ivan Tereshchenko
-twitter:
-  username: YOUR_TWITTER
+author: ivanterescheenko-ai
 social:
-  name: Ivan Tereshchenko
+  name: ivanterescheenko-ai
   links:
     - https://github.com/ivanterescheenko-ai
 
@@ -26,4 +24,3 @@ exclude:
   - README.md
   - CONTRIBUTING.md
   - LICENSE
-  - PUBLISH.md
