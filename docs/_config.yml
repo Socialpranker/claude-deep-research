@@ -4,15 +4,15 @@
 
 title: Deep Research
 description: A structured 7-phase meta-research skill for Claude Code. 29 channels, 280+ stat sources, 75 report blocks.
-url: https://ivanterescheenko-ai.github.io
+url: https://socialpranker.github.io
 baseurl: /claude-deep-research
 
 # SEO
-author: ivanterescheenko-ai
+author: Socialpranker
 social:
-  name: ivanterescheenko-ai
+  name: Socialpranker
   links:
-    - https://github.com/ivanterescheenko-ai
+    - https://github.com/Socialpranker
 
 # Theme — we use custom HTML, but Jekyll needs something
 theme: jekyll-theme-cayman

@@ -11,11 +11,11 @@
 [![Skills](https://img.shields.io/badge/Anthropic-Agent%20Skills-d97757?style=flat-square)](https://docs.anthropic.com/claude/docs/skills)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](CONTRIBUTING.md)
 [![Auto-Validated](https://img.shields.io/badge/APIs-Auto--Validated%20Weekly-blueviolet?style=flat-square)](.github/workflows/catalog-sync.yml)
-[![Stars](https://img.shields.io/github/stars/ivanterescheenko-ai/claude-deep-research?style=flat-square&logo=github)](https://github.com/ivanterescheenko-ai/claude-deep-research/stargazers)
+[![Stars](https://img.shields.io/github/stars/Socialpranker/claude-deep-research?style=flat-square&logo=github)](https://github.com/Socialpranker/claude-deep-research/stargazers)
 
 <br>
 
-**[Docs](https://ivanterescheenko-ai.github.io/claude-deep-research/)** · **[Install](#install-in-30-seconds)** · **[How it works](#how-it-works)** · **[Contribute](CONTRIBUTING.md)**
+**[Docs](https://socialpranker.github.io/claude-deep-research/)** · **[Install](#install-in-30-seconds)** · **[How it works](#how-it-works)** · **[Contribute](CONTRIBUTING.md)**
 
 <br>
 
@@ -89,7 +89,7 @@ Every claim → `[s12]` link → specific quote
 <summary><b>For Claude Code (CLI)</b></summary>
 
 ```bash
-git clone https://github.com/ivanterescheenko-ai/claude-deep-research.git \
+git clone https://github.com/Socialpranker/claude-deep-research.git \
   ~/.claude/skills/deep-research
 ```
 
@@ -106,7 +106,7 @@ That's it. Now type any of these in a Claude Code session:
 
 ```bash
 # Clone
-git clone https://github.com/ivanterescheenko-ai/claude-deep-research.git
+git clone https://github.com/Socialpranker/claude-deep-research.git
 cd claude-deep-research
 
 # Package as .skill bundle
@@ -296,7 +296,7 @@ The catalog is most valuable when **it grows**. Easy contributions:
 
 [Full contributing guide →](CONTRIBUTING.md)
 
-[![Contributors](https://contrib.rocks/image?repo=ivanterescheenko-ai/claude-deep-research)](https://github.com/ivanterescheenko-ai/claude-deep-research/graphs/contributors)
+[![Contributors](https://contrib.rocks/image?repo=Socialpranker/claude-deep-research)](https://github.com/Socialpranker/claude-deep-research/graphs/contributors)
 
 ---
 
@@ -385,7 +385,7 @@ The methodology is portable. ~70% of content is LLM-agnostic markdown templates.
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=ivanterescheenko-ai/claude-deep-research&type=Date)](https://star-history.com/#ivanterescheenko-ai/claude-deep-research&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=Socialpranker/claude-deep-research&type=Date)](https://star-history.com/#Socialpranker/claude-deep-research&Date)
 
 </div>
 
@@ -411,7 +411,7 @@ The methodology is portable. ~70% of content is LLM-agnostic markdown templates.
 ### Установка
 
 ```bash
-git clone https://github.com/ivanterescheenko-ai/claude-deep-research.git ~/.claude/skills/deep-research
+git clone https://github.com/Socialpranker/claude-deep-research.git ~/.claude/skills/deep-research
 ```
 
 Триггеры: «проведи ресёрч», «изучи тему», «копни глубоко», `/deep-research`
@@ -426,8 +426,8 @@ git clone https://github.com/ivanterescheenko-ai/claude-deep-research.git ~/.cla
 
 <div align="center">
 
-### Built by [ivanterescheenko-ai](https://github.com/ivanterescheenko-ai) · [MIT License](LICENSE) · [Roadmap](https://github.com/ivanterescheenko-ai/claude-deep-research/discussions)
+### Built by [Socialpranker](https://github.com/Socialpranker) · [MIT License](LICENSE) · [Roadmap](https://github.com/Socialpranker/claude-deep-research/discussions)
 
-**If this skill saves you time, [give it a star](https://github.com/ivanterescheenko-ai/claude-deep-research)** — it's the only metric I check.
+**If this skill saves you time, [give it a star](https://github.com/Socialpranker/claude-deep-research)** — it's the only metric I check.
 
 </div>

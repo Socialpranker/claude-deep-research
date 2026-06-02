@@ -3,7 +3,7 @@
 This folder is published as a GitHub Pages site at:
 
 ```
-https://ivanterescheenko-ai.github.io/claude-deep-research/
+https://socialpranker.github.io/claude-deep-research/
 ```
 
 ## How to enable
@@ -26,7 +26,7 @@ After ~1 minute, the site will be live.
 If you have a domain (e.g., `deep-research-skill.com`):
 
 1. Create `docs/CNAME` with the domain on a single line
-2. Configure DNS: CNAME record `yourdomain.com → ivanterescheenko-ai.github.io`
+2. Configure DNS: CNAME record `yourdomain.com → socialpranker.github.io`
 3. Settings → Pages → Custom domain → enter domain → check "Enforce HTTPS"
 
 ## Social preview image (og-image)

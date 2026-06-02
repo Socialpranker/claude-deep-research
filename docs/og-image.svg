@@ -71,7 +71,7 @@
   </g>
 
   <!-- Bottom corner -->
-  <text x="1120" y="100" font-family="JetBrains Mono, monospace" font-size="14" font-weight="800" fill="#6a7585" text-anchor="end" letter-spacing="2">github.com/ivanterescheenko-ai/claude-deep-research</text>
+  <text x="1120" y="100" font-family="JetBrains Mono, monospace" font-size="14" font-weight="800" fill="#6a7585" text-anchor="end" letter-spacing="2">github.com/Socialpranker/claude-deep-research</text>
 
   <!-- Decorative dot pattern bottom right -->
   <g fill="#1a2a44" opacity="0.6">
