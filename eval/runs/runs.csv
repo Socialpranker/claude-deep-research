@@ -1,0 +1,2 @@
+run_id,question_slug,model_config,real_cost_usd,date,notes
+real-may,llm-model-selection-by-task,unknown-may-run,1.85,2026-05-31,baseline run made before routing existed

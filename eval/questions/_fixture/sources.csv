@@ -1,0 +1,4 @@
+id,title,url,channel,credibility,recency,bias,quote,key_finding
+1,"Example Domain",https://example.com,General,HIGH,2026-06,None,"This domain is for use in illustrative examples","Live control URL — must resolve 200"
+2,"Definitely Missing Page",https://example.com/definitely-404-xyz-oraclepoly,General,LOW,2026-06,None,"n/a","Dead control URL — must 404, expect red flag"
+3,"HTTPBin Status 200",https://httpbin.org/status/200,General,MED,2026-06,None,"n/a","Second live control via httpbin"

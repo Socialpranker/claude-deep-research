@@ -31,6 +31,10 @@ research/
 # Script outputs (committed only via GitHub Actions to reports/ branch)
 scripts/output/
 
+# Eval run artifacts (scorecards, judge inputs — regenerated per run)
+eval/output/*
+!eval/output/.gitkeep
+
 # Secrets (на всякий)
 .env
 .env.local
