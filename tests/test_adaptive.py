@@ -244,3 +244,73 @@ def test_decide_justified_without_reason_gets_fallback():
     cands = [Candidate(subquestion="Q1", trigger="empty_result", detail="0 hits")]
     kept = decide_deviations(prov, cands)
     assert kept[0].rationale == "justified by orchestrator"
+
+
+from runner.adaptive import run_search_loop
+
+
+class _LoopProvider:
+    """Mock provider for the loop: scan says NONE; decisions all JUSTIFIED."""
+    name = "mock"
+    def complete(self, prompt, *, system="", model_tier="mid"):
+        if "CONTRADICTION:" in prompt:   # this is the scan prompt
+            return "NONE"
+        return "JUSTIFIED: go"           # this is a decision prompt
+    def fanout(self, tasks, *, model_tier="cheap"):
+        return ["" for _ in tasks]
+
+
+def _round_factory(scripts):
+    """scripts: list of per-round agent-output lists. Extra rounds -> no signals."""
+    def run_round(round_index, depth, directives):
+        idx = round_index - 1
+        return scripts[idx] if idx < len(scripts) else [{"subquestion_id": "Qx", "sources": [], "signals": {}}]
+    return run_round
+
+
+def _sig(trigger):
+    return {"subquestion_id": "Q1", "sources": [],
+            "signals": {trigger: {"fired": True, "detail": "d"}}}
+
+
+def test_loop_calm_run_exits_after_one_round(tmp_path):
+    # round 1 fires nothing -> one round, no deviations, loop exits
+    run_round = _round_factory([[{"subquestion_id": "Q1", "sources": [], "signals": {}}]])
+    devs, rounds = run_search_loop(_LoopProvider(), "deep", run_round)
+    assert rounds == 1
+    assert devs == []
+
+
+def test_loop_cheap_trigger_spawns_one_more_round(tmp_path):
+    # round 1 fires empty_result (cheap); round 2 fires nothing -> 2 rounds, 1 pursued
+    run_round = _round_factory([[_sig("empty_result")], [{"subquestion_id": "Q1", "sources": [], "signals": {}}]])
+    devs, rounds = run_search_loop(_LoopProvider(), "deep", run_round)
+    assert rounds == 2
+    assert len(devs) == 1 and devs[0].status == "pursued" and devs[0].trigger == "empty_result"
+
+
+def test_loop_shallow_expensive_is_not_pursued():
+    # shallow expensive budget = 0; an unexpected_finding must be recorded not_pursued
+    run_round = _round_factory([[_sig("unexpected_finding")]])
+    devs, rounds = run_search_loop(_LoopProvider(), "shallow", run_round)
+    assert rounds == 1  # no spawn (budget 0)
+    assert len(devs) == 1 and devs[0].status == "not_pursued"
+    assert devs[0].carry_forward  # routed to refresh
+
+
+def test_loop_respects_depth_limit():
+    # every round fires a cheap trigger; deep depth_limit=2 caps the nesting
+    run_round = _round_factory([[_sig("empty_result")]] * 10)  # always fires
+    devs, rounds = run_search_loop(_LoopProvider(), "deep", run_round)
+    # Round 1 (depth0) -> spawn R2 (depth1) -> spawn R3 (depth2) -> depth_ok(2)=False, stop
+    assert rounds == 3
+    pursued = [d for d in devs if d.status == "pursued"]
+    assert len(pursued) == 2  # two spawns allowed before the cap
+
+
+def test_loop_terminates_when_cheap_budget_drained():
+    # deep cheap budget = 8; force many cheap triggers but depth allows only 2 anyway,
+    # so verify the loop never exceeds min(budget, depth-bounded spawns) and stops.
+    run_round = _round_factory([[_sig("empty_result")]] * 50)
+    devs, rounds = run_search_loop(_LoopProvider(), "deep", run_round)
+    assert rounds <= 3  # depth cap bites first; loop provably stops

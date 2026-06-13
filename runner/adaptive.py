@@ -212,3 +212,78 @@ def decide_deviations(provider, candidates: list[Candidate]) -> list[Candidate]:
             c.rationale = reason.strip() or "justified by orchestrator"
             kept.append(c)
     return kept
+
+
+@dataclass
+class RoundResult:
+    index: int
+    depth: int
+    agent_outputs: list[dict]
+
+
+def run_search_loop(provider, depth: str, run_round) -> tuple[list[Deviation], int]:
+    """Drive Phase 4 as a loop. Returns (deviations, total_rounds_run).
+
+    `run_round(round_index, depth, directives)` runs one search round and returns a
+    list of sub-agent output dicts. Termination is guaranteed: each spawned round either
+    spends budget or is blocked by the depth limit; with no justified trigger the loop
+    exits immediately.
+    """
+    budget = Budget.for_depth(depth)
+    deviations: list[Deviation] = []
+    round_index = 1
+    current_depth = 0
+
+    while True:
+        outputs = run_round(round_index, current_depth, directives=None)
+
+        # collect fired triggers from sub-agent signals (recall)
+        candidates: list[Candidate] = []
+        for blob in outputs:
+            fired, details = parse_signals(blob)
+            qid = blob.get("subquestion_id", "?")
+            for trig in fired:
+                candidates.append(Candidate(subquestion=qid, trigger=trig, detail=details.get(trig, "")))
+
+        # cross-agent contradictions the sub-agents can't see
+        for f in cross_agent_contradiction_scan(provider, outputs):
+            candidates.append(Candidate(subquestion="(cross-agent)", trigger="contradiction", detail=f["detail"]))
+
+        if not candidates:
+            break  # nothing flagged -> done
+
+        # Opus precision filter
+        justified = decide_deviations(provider, candidates)
+        if not justified:
+            break  # flags existed but none survived judgment -> done
+
+        spawned = False
+        for c in justified:
+            klass = class_of(c.trigger)
+            ba = {"cheap": budget.cheap, "expensive": budget.expensive}
+            can = budget.can_spend(klass) and budget.depth_ok(current_depth)
+            if can:
+                budget.spend(klass)
+                ba = {"cheap": budget.cheap, "expensive": budget.expensive}
+                next_round = round_index + 1
+                deviations.append(Deviation(
+                    subquestion=c.subquestion, round_from=round_index, round_to=next_round,
+                    trigger=c.trigger, klass=klass, status="pursued", rationale=c.rationale,
+                    action=f"launched round {next_round}", depth=current_depth + 1,
+                    budget_after=ba, outcome="(pending scoring)", new_source_ids=[]))
+                spawned = True
+            else:
+                reason = "depth_limit" if not budget.depth_ok(current_depth) else "budget_exhausted"
+                deviations.append(Deviation(
+                    subquestion=c.subquestion, round_from=round_index, round_to=None,
+                    trigger=c.trigger, klass=klass, status="not_pursued",
+                    rationale=f"{c.rationale or 'justified'} (not pursued: {reason})",
+                    action=None, depth=None, budget_after=ba, outcome=None,
+                    new_source_ids=[], carry_forward="Phase 7 refresh-target"))
+
+        if not spawned:
+            break  # every justified candidate was blocked -> done (records kept)
+        round_index += 1
+        current_depth += 1
+
+    return deviations, round_index
