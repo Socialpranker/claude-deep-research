@@ -184,3 +184,50 @@ def test_scan_skips_when_fewer_than_two_agents():
     found = cross_agent_contradiction_scan(prov, [_agent("Q1", "only one")])
     assert found == []          # nothing to compare against
     assert prov.calls == []     # and we didn't waste a call
+
+
+from runner.adaptive import decide_deviations, Candidate
+
+
+class _VerdictProvider:
+    """Mock: returns a verdict string keyed by which trigger appears in the prompt."""
+    name = "mock"
+    def __init__(self, verdicts: dict[str, str]):
+        self.verdicts = verdicts
+        self.calls = []
+    def complete(self, prompt, *, system="", model_tier="mid"):
+        self.calls.append((prompt, model_tier))
+        for trig, verdict in self.verdicts.items():
+            if trig in prompt:
+                return verdict
+        return "REJECT"
+    def fanout(self, tasks, *, model_tier="cheap"):
+        return [self.complete(t) for t in tasks]
+
+
+def test_decide_uses_strong_tier():
+    prov = _VerdictProvider({"empty_result": "JUSTIFIED: reformulate"})
+    cands = [Candidate(subquestion="Q1", trigger="empty_result", detail="0 hits")]
+    decide_deviations(prov, cands)
+    assert prov.calls and prov.calls[0][1] == "strong"
+
+
+def test_decide_keeps_justified_drops_rejected():
+    prov = _VerdictProvider({
+        "empty_result": "JUSTIFIED: add fallback channel",
+        "unexpected_finding": "REJECT: already covered by the plan",
+    })
+    cands = [
+        Candidate(subquestion="Q1", trigger="empty_result", detail="0 hits"),
+        Candidate(subquestion="Q2", trigger="unexpected_finding", detail="tangent"),
+    ]
+    kept = decide_deviations(prov, cands)
+    assert len(kept) == 1
+    assert kept[0].trigger == "empty_result"
+    assert kept[0].rationale  # the JUSTIFIED reason is captured
+
+
+def test_decide_empty_candidates_returns_empty():
+    prov = _VerdictProvider({})
+    assert decide_deviations(prov, []) == []
+    assert prov.calls == []  # no candidates -> no model calls

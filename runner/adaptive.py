@@ -179,3 +179,36 @@ def cross_agent_contradiction_scan(provider, agent_outputs: list[dict]) -> list[
         if line.upper().startswith("CONTRADICTION:"):
             findings.append({"trigger": "contradiction", "detail": line.split(":", 1)[1].strip()})
     return findings
+
+
+@dataclass
+class Candidate:
+    """A fired trigger awaiting the orchestrator's justification verdict."""
+    subquestion: str
+    trigger: str
+    detail: str
+    rationale: str = ""   # filled in when justified
+
+
+def decide_deviations(provider, candidates: list[Candidate]) -> list[Candidate]:
+    """Strong-tier (Opus) filter: keep only justified candidates, attach the rationale.
+
+    Provider convention: reply begins with "JUSTIFIED" (keep, the rest is the reason)
+    or "REJECT" (drop). Anything not starting with JUSTIFIED is treated as a reject —
+    the expensive, scope-changing default is to NOT deviate.
+    """
+    kept: list[Candidate] = []
+    for c in candidates:
+        prompt = (
+            f"A search agent flagged a `{c.trigger}` signal on subquestion "
+            f"{c.subquestion}: {c.detail}\n"
+            "Is deviating from the approved plan JUSTIFIED here? Reply with one line:\n"
+            "  JUSTIFIED: <why>   — if the deviation is warranted\n"
+            "  REJECT: <why>      — if the plan already covers it or it's a tangent"
+        )
+        reply = provider.complete(prompt, model_tier="strong").strip()
+        if reply.upper().startswith("JUSTIFIED"):
+            _, _, reason = reply.partition(":")
+            c.rationale = reason.strip() or "justified by orchestrator"
+            kept.append(c)
+    return kept
