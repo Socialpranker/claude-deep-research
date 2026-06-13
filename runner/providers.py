@@ -41,7 +41,8 @@ class DryRunProvider:
     def complete(self, prompt: str, *, system: str = "", model_tier: str = "mid") -> str:
         assert model_tier in TIERS, f"unknown tier {model_tier}"
         h = hashlib.sha1((system + prompt).encode()).hexdigest()[:8]
-        return f"[dryrun:{model_tier}:{h}] " + prompt.strip().splitlines()[0][:80]
+        first_line = next(iter(prompt.strip().splitlines()), "")
+        return f"[dryrun:{model_tier}:{h}] " + first_line[:80]
 
     def fanout(self, tasks: list[str], *, model_tier: str = "cheap") -> list[str]:
         # local thread pool mirrors real sub-agent parallelism without any model

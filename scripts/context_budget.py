@@ -26,10 +26,32 @@ No third-party deps. Run from the repo root (or pass --root).
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
-CHARS_PER_TOKEN = 4  # same proxy as eval/score_run.py — keep consistent
+CHARS_PER_TOKEN = 4  # token proxy; MUST match eval/score_run.py (enforced in --ci, see check_proxy_in_sync)
+
+
+def check_proxy_in_sync(root: Path) -> str | None:
+    """Guard the hand-synced CHARS_PER_TOKEN contract with eval/score_run.py.
+
+    Returns an error string if score_run.py defines a different value (or can't be
+    read), else None. Cheap text scan — avoids importing score_run across packages.
+    """
+    src = root / "eval" / "score_run.py"
+    try:
+        text = src.read_text(encoding="utf-8")
+    except OSError:
+        return f"cannot read {src} to verify CHARS_PER_TOKEN is in sync"
+    m = re.search(r"^CHARS_PER_TOKEN\s*=\s*(\d+)", text, re.MULTILINE)
+    if not m:
+        return f"CHARS_PER_TOKEN not found in {src} (can't verify proxies are in sync)"
+    other = int(m.group(1))
+    if other != CHARS_PER_TOKEN:
+        return f"CHARS_PER_TOKEN drift: this file={CHARS_PER_TOKEN} but score_run.py={other}"
+    return None
+
 
 # Budgets in tokens. Tune as the catalog evolves; these are the guard-rails CI enforces.
 BUDGET_SKILL_MD = 7500        # SKILL.md is read on EVERY invocation — keep it lean
@@ -177,6 +199,14 @@ def main() -> int:
             breaches.append(f"SKILL.md {skill_tok} > {BUDGET_SKILL_MD}")
         if always_tok > BUDGET_ALWAYS_FLOOR:
             breaches.append(f"always-floor {always_tok} > {BUDGET_ALWAYS_FLOOR}")
+        # A renamed/missing base ref silently shrinks the measured floor — treat as a breach,
+        # not a printed note, so the guard can't pass while measuring a smaller-than-real floor.
+        if always_missing:
+            breaches.append(f"always-floor files missing (rename?): {', '.join(always_missing)}")
+        # The token proxy is hand-synced with score_run.py; fail if the two have drifted.
+        drift = check_proxy_in_sync(args.root)
+        if drift:
+            breaches.append(drift)
         if breaches:
             print("\nBUDGET BREACH:\n  " + "\n  ".join(breaches))
             return 1

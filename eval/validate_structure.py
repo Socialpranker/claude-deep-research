@@ -76,7 +76,7 @@ def check_report(d: Path, r: Report) -> int:
             r.err(f"{p.name}: unknown genre suffix '{genre}' (allowed: {', '.join(sorted(GENRES))})")
     if len(dated) > 1:
         r.warn(f"{len(dated)} dated reports found; score_run.py picks the lexically-latest")
-    return dated[0].read_text(encoding="utf-8") and len(dated)
+    return len(dated)
 
 
 def check_plan(d: Path, r: Report) -> None:
