@@ -22,7 +22,7 @@ In a Claude Code session, just ask in natural language — any of these trigger 
 > «проведи ресёрч: <your question>»  ·  "deep research <your question>"  ·  `/deep-research`
 
 Claude will: restate your question, pick a report genre, write a `plan.md`, search
-across <!--gen:count:channels-->29<!--/gen--> channels and <!--gen:count:stat_sources-->461<!--/gen-->
+across <!--gen:count:channels-->29<!--/gen--> channels and <!--gen:count:stat_sources-->460<!--/gen-->
 curated stat sources (+ <!--gen:count:api-->39<!--/gen-->+ APIs), score and triangulate every
 source, synthesize with an adversarial self-critique, and verify citations.
 

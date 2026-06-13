@@ -1,6 +1,6 @@
 # Contributing to Deep Research
 
-Thank you for considering a contribution. This skill is most valuable when its **catalog of sources and channels grows** — the world has thousands more sources than the current <!--gen:count:stat_sources-->461<!--/gen-->+, and you might know exactly the right one for a specific industry or methodology.
+Thank you for considering a contribution. This skill is most valuable when its **catalog of sources and channels grows** — the world has thousands more sources than the current <!--gen:count:stat_sources-->460<!--/gen-->+, and you might know exactly the right one for a specific industry or methodology.
 
 Contributions are organized by **difficulty** so you can pick what fits.
 

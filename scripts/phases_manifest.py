@@ -20,10 +20,17 @@ REQUIRED = ("id", "name_ru", "name_en", "model", "effort", "depth_gate")
 
 def _strip_quotes(v: str) -> str:
     v = v.strip()
-    if v and v[0] not in "\"'" and "#" in v:
+    if v and v[0] in "\"'":
+        # quoted scalar: take the quoted span, drop anything after the closing quote
+        # (e.g. an inline `# comment`).
+        q = v[0]
+        end = v.find(q, 1)
+        if end != -1:
+            return v[1:end]
+        return v[1:]  # unterminated quote — best effort
+    # unquoted scalar: an inline comment ends the value
+    if "#" in v:
         v = v.split("#", 1)[0].strip()
-    if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
-        return v[1:-1]
     return v
 
 

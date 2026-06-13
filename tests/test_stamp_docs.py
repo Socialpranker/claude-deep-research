@@ -79,7 +79,7 @@ def test_write_mode_fixes_and_check_passes(tmp_path):
 def test_zero_count_refused(monkeypatch, tmp_path):
     # if a regex returns 0, render_values must refuse (never stamp zero silently)
     monkeypatch.setattr(stamp_docs.catalog_counts, "counts", lambda repo: {
-        "blocks": 0, "channels": 29, "stat_sources": 461, "api": 39, "genres": 6})
+        "blocks": 0, "channels": 29, "stat_sources": 460, "api": 39, "genres": 6})
     with pytest.raises(ValueError, match="suspicious|zero"):
         stamp_docs.render_values(REPO)
 

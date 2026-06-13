@@ -48,3 +48,22 @@ def test_unparseable_raises(tmp_path):
     bad.write_text("not a phases doc\n", encoding="utf-8")
     with pytest.raises(ValueError):
         phases_manifest.load_phases(bad)
+
+
+def test_inline_comment_stripped_for_quoted_and_unquoted(tmp_path):
+    # a quoted value followed by an inline comment must yield the quoted span only,
+    # not the raw string with the comment glued on (regression in _strip_quotes).
+    f = tmp_path / "p.yaml"
+    f.write_text(
+        'phases:\n'
+        '  - id: "1"  # the reframing phase\n'
+        '    name_ru: "Reframing"\n'
+        '    name_en: Reframing  # english\n'
+        '    model: opus\n'
+        '    effort: high\n'
+        '    depth_gate: shallow\n',
+        encoding="utf-8",
+    )
+    p = phases_manifest.load_phases(f)[0]
+    assert p["id"] == "1"
+    assert p["name_en"] == "Reframing"

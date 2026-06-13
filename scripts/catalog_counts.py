@@ -3,7 +3,7 @@
 
 Counts are derived directly from the files — there is no separate number registry.
 These regexes were verified against the tree on 2026-06-13:
-  blocks=103, channels=29, stat_sources=461, api=39, genres=6.
+  blocks=103, channels=29, stat_sources=460, api=39, genres=6.
 
 Pure read, no side effects. Callable from the stamper and from tests.
 """
@@ -38,6 +38,8 @@ def _count_channels(repo: Path) -> int:
 def _count_stat_sources(repo: Path) -> int:
     total = 0
     for p in (repo / "references" / "stat_sources").rglob("*.md"):
+        if p.name in ("INDEX.md", "README.md"):
+            continue  # INDEX carries a template `**URL:** <main URL>` example — not a real source
         total += len(_URL_RE.findall(p.read_text(encoding="utf-8")))
     return total
 

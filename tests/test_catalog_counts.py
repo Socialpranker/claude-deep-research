@@ -15,7 +15,7 @@ def test_counts_match_verified_ground_truth():
     c = catalog_counts.counts(REPO)
     assert c["blocks"] == 103
     assert c["channels"] == 29
-    assert c["stat_sources"] == 461
+    assert c["stat_sources"] == 460
     assert c["api"] == 39
     assert c["genres"] == 6
 

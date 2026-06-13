@@ -75,7 +75,7 @@ Mandatory adversarial pass + opposition queries
 
 Atomic theses in `findings/FN.md` reusable
 
-<!--gen:count:channels-->29<!--/gen--> named channels + <!--gen:count:stat_sources-->461<!--/gen-->+ stat sources
+<!--gen:count:channels-->29<!--/gen--> named channels + <!--gen:count:stat_sources-->460<!--/gen-->+ stat sources
 
 Every claim → `[s12]` link → specific quote
 
@@ -180,7 +180,7 @@ Named strategies with query patterns + paywall fallbacks:
 </td>
 <td width="33%" valign="top">
 
-### <!--gen:count:stat_sources-->461<!--/gen-->+ Stat Sources
+### <!--gen:count:stat_sources-->460<!--/gen-->+ Stat Sources
 
 14 cross-industry + 19 industry categories. Each entry: URL · Type · Access · Quality · Limitations · Combine-with · Fallback.
 
@@ -390,7 +390,7 @@ The file-per-source structure is the key **reuse** mechanism. A single research 
 It's **structured methodology + curated catalog + reusable templates + automation**.
 
 - The <!--gen:count:phases-->9<!--/gen-->-phase workflow forces discipline
-- <!--gen:count:stat_sources-->461<!--/gen-->+ stat sources catalog is curated knowledge
+- <!--gen:count:stat_sources-->460<!--/gen-->+ stat sources catalog is curated knowledge
 - <!--gen:count:blocks-->103<!--/gen--> reusable blocks compose any report shape
 - Weekly auto-validation keeps the catalog alive
 - 25+ upstream awesome-lists give infinite discovery layer
@@ -419,7 +419,7 @@ The methodology is portable. ~70% of content is LLM-agnostic markdown templates.
 | <!--gen:count:phases-->9<!--/gen-->-phase workflow | — | ✓ |
 | <!--gen:count:blocks-->103<!--/gen--> report blocks | — | ✓ |
 | <!--gen:count:channels-->29<!--/gen--> search channels | — | ✓ |
-| <!--gen:count:stat_sources-->461<!--/gen-->+ stat sources | — | ✓ |
+| <!--gen:count:stat_sources-->460<!--/gen-->+ stat sources | — | ✓ |
 
 **To adapt:**
 1. Load `SKILL.md` + relevant `references/*.md` into the LLM's context
@@ -450,7 +450,7 @@ The methodology is portable. ~70% of content is LLM-agnostic markdown templates.
 - **<!--gen:count:genres-->6<!--/gen--> жанров отчёта**: qa / explainer / decision / landscape / validation / custom
 - **<!--gen:count:blocks-->103<!--/gen--> блоков** в 10 категориях — переиспользуемые секции с шаблонами и анти-паттернами
 - **<!--gen:count:channels-->29<!--/gen--> каналов поиска** с paywall fallback протоколом (включая api-direct)
-- **<!--gen:count:stat_sources-->461<!--/gen-->+ статистических источников** в 14 cross-industry + 19 отраслевых категориях
+- **<!--gen:count:stat_sources-->460<!--/gen-->+ статистических источников** в 14 cross-industry + 19 отраслевых категориях
 - **<!--gen:count:api-->39<!--/gen-->+ API endpoints** для programmatic доступа (free no-auth приоритетны)
 - **plan.md** с 17 секциями для прозрачности
 - **Adversarial pass** с 4 вопросами самокритики (обязателен для medium/deep)
