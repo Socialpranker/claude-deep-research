@@ -49,3 +49,48 @@ def parse_signals(agent_blob: dict) -> tuple[set[str], dict[str, str]]:
     if unknown:
         log.warning("signals block has unknown triggers %s — ignored", sorted(unknown))
     return fired, details
+
+
+# depth -> (cheap_budget, expensive_budget, depth_limit)
+BUDGET_BY_DEPTH = {
+    "shallow": (2, 0, 1),
+    "medium":  (4, 1, 1),
+    "deep":    (8, 3, 2),
+}
+
+
+def class_of(trigger: str) -> str:
+    """Map a trigger name to its deviation class."""
+    if trigger in CHEAP_TRIGGERS:
+        return "cheap"
+    if trigger in EXPENSIVE_TRIGGERS:
+        return "expensive"
+    raise ValueError(f"unknown trigger {trigger!r}")
+
+
+@dataclass
+class Budget:
+    """Per-run deviation budget. Orchestrator-owned; debit is atomic, never negative."""
+    cheap: int
+    expensive: int
+    depth_limit: int
+
+    @classmethod
+    def for_depth(cls, depth: str) -> "Budget":
+        try:
+            c, e, d = BUDGET_BY_DEPTH[depth]
+        except KeyError:
+            raise ValueError(f"unknown depth {depth!r} (expected shallow|medium|deep)")
+        return cls(cheap=c, expensive=e, depth_limit=d)
+
+    def can_spend(self, klass: str) -> bool:
+        return getattr(self, klass) > 0
+
+    def spend(self, klass: str) -> None:
+        if not self.can_spend(klass):
+            raise ValueError(f"{klass} budget exhausted — caller must check can_spend first")
+        setattr(self, klass, getattr(self, klass) - 1)
+
+    def depth_ok(self, current_depth: int) -> bool:
+        """True if a round at current_depth may spawn a (deeper) deviation round."""
+        return current_depth < self.depth_limit
