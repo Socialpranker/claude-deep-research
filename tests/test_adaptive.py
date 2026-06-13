@@ -81,3 +81,59 @@ def test_budget_depth_limit_gate():
     b = Budget.for_depth("medium")  # depth_limit 1
     assert b.depth_ok(0) is True   # round 1 -> spawning a depth-1 round is allowed
     assert b.depth_ok(1) is False  # at the limit, no further spawn
+
+
+from runner.adaptive import Deviation, write_deviations
+
+
+def test_deviation_pursued_record_renders_all_fields():
+    d = Deviation(
+        subquestion="Q3", round_from=1, round_to=2, trigger="empty_result",
+        klass="cheap", status="pursued", rationale="academic empty; added preprint",
+        action="round 2 on preprint-servers", depth=1,
+        budget_after={"cheap": 3, "expensive": 1},
+        outcome="+2 sources", new_source_ids=["S11", "S12"], carry_forward=None,
+    )
+    md = d.render()
+    assert "trigger: empty_result" in md
+    assert "status: pursued" in md
+    assert "decision_by: orchestrator (opus)" in md  # constant, always Opus
+    assert "new_source_ids: [S11, S12]" in md
+
+
+def test_deviation_not_pursued_has_carry_forward_and_no_action():
+    d = Deviation(
+        subquestion="Q5", round_from=1, round_to=None, trigger="unexpected_finding",
+        klass="expensive", status="not_pursued", rationale="expensive budget exhausted",
+        action=None, depth=None, budget_after={"cheap": 5, "expensive": 0},
+        outcome=None, new_source_ids=[], carry_forward="Phase 7 refresh-target",
+    )
+    md = d.render()
+    assert "status: not_pursued" in md
+    assert "action: none" in md
+    assert "carry_forward: Phase 7 refresh-target" in md
+
+
+def test_write_deviations_creates_file_with_all_records(tmp_path):
+    devs = [
+        Deviation(subquestion="Q3", round_from=1, round_to=2, trigger="empty_result",
+                  klass="cheap", status="pursued", rationale="r", action="a", depth=1,
+                  budget_after={"cheap": 3, "expensive": 1}, outcome="+1",
+                  new_source_ids=["S11"], carry_forward=None),
+        Deviation(subquestion="Q5", round_from=1, round_to=None, trigger="contradiction",
+                  klass="expensive", status="not_pursued", rationale="budget out",
+                  action=None, depth=None, budget_after={"cheap": 3, "expensive": 0},
+                  outcome=None, new_source_ids=[], carry_forward="refresh"),
+    ]
+    path = write_deviations(tmp_path, "my topic", devs)
+    assert path.name == "deviations.md"
+    text = path.read_text(encoding="utf-8")
+    assert "# Deviations — my topic" in text
+    assert "## D1" in text and "## D2" in text
+    assert text.count("decision_by: orchestrator (opus)") == 2
+
+
+def test_write_deviations_empty_list_still_writes_header(tmp_path):
+    path = write_deviations(tmp_path, "topic", [])
+    assert path.exists()
+    assert "# Deviations — topic" in path.read_text(encoding="utf-8")

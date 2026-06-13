@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
+from pathlib import Path
 
 log = logging.getLogger(__name__)
 
@@ -94,3 +95,57 @@ class Budget:
     def depth_ok(self, current_depth: int) -> bool:
         """True if a round at current_depth may spawn a (deeper) deviation round."""
         return current_depth < self.depth_limit
+
+
+@dataclass
+class Deviation:
+    """One considered trigger (pursued or not_pursued) for the deviations.md log."""
+    subquestion: str
+    round_from: int
+    round_to: int | None        # the round this deviation spawned, or None if not pursued
+    trigger: str
+    klass: str                  # "cheap" | "expensive"
+    status: str                 # "pursued" | "not_pursued"
+    rationale: str
+    action: str | None
+    depth: int | None
+    budget_after: dict[str, int]
+    outcome: str | None
+    new_source_ids: list[str] = field(default_factory=list)
+    carry_forward: str | None = None
+
+    def render(self) -> str:
+        round_str = f"{self.round_from}" if self.round_to is None else f"{self.round_from} → {self.round_to}"
+        ids = "[" + ", ".join(self.new_source_ids) + "]"
+        ba = "{ cheap: %d, expensive: %d }" % (self.budget_after.get("cheap", 0),
+                                               self.budget_after.get("expensive", 0))
+        lines = [
+            f"- subquestion: {self.subquestion}",
+            f"- round: {round_str}",
+            f"- trigger: {self.trigger}",
+            f"- class: {self.klass}",
+            f"- status: {self.status}",
+            "- decision_by: orchestrator (opus)",
+            f"- rationale: {self.rationale}",
+            f"- action: {self.action if self.action else 'none'}",
+            f"- depth: {self.depth if self.depth is not None else '—'}",
+            f"- budget_after: {ba}",
+            f"- outcome: {self.outcome if self.outcome else '—'}",
+            f"- new_source_ids: {ids}",
+        ]
+        if self.carry_forward:
+            lines.append(f"- carry_forward: {self.carry_forward}")
+        return "\n".join(lines)
+
+
+def write_deviations(run_dir: Path, topic: str, deviations: list[Deviation]) -> Path:
+    """Render all deviation records to <run_dir>/deviations.md. Always writes a header,
+    even for an empty list (an empty file is itself an honest signal: nothing deviated)."""
+    out = [f"# Deviations — {topic}", ""]
+    for i, d in enumerate(deviations, start=1):
+        out.append(f"## D{i}")
+        out.append(d.render())
+        out.append("")
+    path = run_dir / "deviations.md"
+    path.write_text("\n".join(out).rstrip() + "\n", encoding="utf-8")
+    return path
