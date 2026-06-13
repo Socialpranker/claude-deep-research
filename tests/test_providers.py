@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from runner.providers import ClaudeProvider, run_parallel
+from runner.providers import ClaudeProvider, OpenAICompatProvider, run_parallel
 
 
 def test_run_parallel_preserves_order():
@@ -121,3 +121,60 @@ def test_claude_fanout_uses_cheap_tier_by_default():
     p = ClaudeProvider(client=client)
     p.fanout(["a"])
     assert client.messages.create.call_args.kwargs["model"] == "claude-haiku-4-5"
+
+
+def _openai_response(text):
+    resp = MagicMock()
+    resp.choices = [MagicMock()]
+    resp.choices[0].message.content = text
+    return resp
+
+
+def test_openai_complete_returns_text():
+    client = MagicMock()
+    client.chat.completions.create.return_value = _openai_response("hi there")
+    p = OpenAICompatProvider(client=client)
+    assert p.complete("q", model_tier="mid") == "hi there"
+
+
+def test_openai_complete_none_content_becomes_empty():
+    client = MagicMock()
+    client.chat.completions.create.return_value = _openai_response(None)
+    p = OpenAICompatProvider(client=client)
+    assert p.complete("q") == ""
+
+
+def test_openai_complete_maps_tier_to_model():
+    client = MagicMock()
+    client.chat.completions.create.return_value = _openai_response("x")
+    p = OpenAICompatProvider(client=client)
+    p.complete("q", model_tier="strong")
+    assert client.chat.completions.create.call_args.kwargs["model"] == "gpt-5"
+
+
+def test_openai_complete_system_prepended():
+    client = MagicMock()
+    client.chat.completions.create.return_value = _openai_response("x")
+    p = OpenAICompatProvider(client=client)
+    p.complete("q", system="be terse")
+    msgs = client.chat.completions.create.call_args.kwargs["messages"]
+    assert msgs[0] == {"role": "system", "content": "be terse"}
+    assert msgs[-1] == {"role": "user", "content": "q"}
+
+
+def test_openai_complete_no_system_omits_system_message():
+    client = MagicMock()
+    client.chat.completions.create.return_value = _openai_response("x")
+    p = OpenAICompatProvider(client=client)
+    p.complete("q")
+    msgs = client.chat.completions.create.call_args.kwargs["messages"]
+    assert all(m["role"] != "system" for m in msgs)
+
+
+def test_openai_fanout_preserves_order():
+    client = MagicMock()
+    client.chat.completions.create.side_effect = lambda **kw: _openai_response(
+        kw["messages"][-1]["content"].upper()
+    )
+    p = OpenAICompatProvider(client=client)
+    assert p.fanout(["a", "b"]) == ["A", "B"]

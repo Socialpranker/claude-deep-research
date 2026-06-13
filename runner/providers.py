@@ -98,23 +98,38 @@ class ClaudeProvider:
         )
 
 
-class OpenAIProvider:
-    """Adapter for OpenAI-style APIs. fanout() falls back to a thread pool of
-    complete() calls — the methodology doesn't require native sub-agents."""
+class OpenAICompatProvider:
+    """Adapter for any OpenAI-compatible endpoint: OpenAI itself, OpenRouter,
+    Ollama, Groq, vLLM, LM Studio. They differ only by base_url + model names."""
 
     name = "openai"
-    TIER_MODEL = {"strong": "o-series", "mid": "4-class", "cheap": "mini"}
+    TIER_MODEL = {"strong": "gpt-5", "mid": "gpt-4o", "cheap": "gpt-4o-mini"}
 
-    def __init__(self, client=None):
+    def __init__(self, client=None, *, base_url: str | None = None,
+                 model_override: str | None = None, max_concurrency: int = 5):
+        if client is None:
+            import openai
+            client = openai.OpenAI(base_url=base_url)  # reads OPENAI_API_KEY
         self.client = client
+        self.model_override = model_override
+        self.max_concurrency = max_concurrency
+
+    def _model_for(self, tier: str) -> str:
+        assert tier in TIERS, f"unknown tier {tier}"
+        return self.model_override or self.TIER_MODEL[tier]
 
     def complete(self, prompt: str, *, system: str = "", model_tier: str = "mid") -> str:
-        raise NotImplementedError("TODO: call OpenAI chat API with TIER_MODEL[model_tier]")
+        messages = ([{"role": "system", "content": system}] if system else []) + \
+                   [{"role": "user", "content": prompt}]
+        resp = self.client.chat.completions.create(model=self._model_for(model_tier), messages=messages)
+        return resp.choices[0].message.content or ""
 
     def fanout(self, tasks: list[str], *, model_tier: str = "cheap") -> list[str]:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=min(5, len(tasks) or 1)) as ex:
-            return list(ex.map(lambda t: self.complete(t, model_tier=model_tier), tasks))
+        return run_parallel(
+            [lambda t=t: self.complete(t, model_tier=model_tier) for t in tasks],
+            limit=self.max_concurrency,
+        )
 
 
 def get_provider(name: str) -> LLMProvider:
-    return {"dryrun": DryRunProvider, "claude": ClaudeProvider, "openai": OpenAIProvider}[name]()
+    return {"dryrun": DryRunProvider, "claude": ClaudeProvider, "openai": OpenAICompatProvider}[name]()
