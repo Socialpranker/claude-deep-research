@@ -1,6 +1,9 @@
 import time
+from unittest.mock import MagicMock
+
 import pytest
-from runner.providers import run_parallel
+
+from runner.providers import ClaudeProvider, run_parallel
 
 
 def test_run_parallel_preserves_order():
@@ -30,10 +33,6 @@ def test_run_parallel_fails_loud():
 
 def test_run_parallel_empty():
     assert run_parallel([]) == []
-
-
-from unittest.mock import MagicMock
-from runner.providers import ClaudeProvider
 
 
 def _text_block(text):
@@ -96,3 +95,11 @@ def test_claude_complete_empty_system_uses_not_given():
     p = ClaudeProvider(client=client)
     p.complete("hi")
     assert client.messages.create.call_args.kwargs["system"] is anthropic.NOT_GIVEN
+
+
+def test_claude_complete_nonempty_system_is_forwarded():
+    client = MagicMock()
+    client.messages.create.return_value = _claude_response("x")
+    p = ClaudeProvider(client=client)
+    p.complete("hi", system="Be terse.")
+    assert client.messages.create.call_args.kwargs["system"] == "Be terse."
