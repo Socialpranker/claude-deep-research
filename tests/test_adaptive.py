@@ -273,7 +273,7 @@ def _sig(trigger):
             "signals": {trigger: {"fired": True, "detail": "d"}}}
 
 
-def test_loop_calm_run_exits_after_one_round(tmp_path):
+def test_loop_calm_run_exits_after_one_round():
     # round 1 fires nothing -> one round, no deviations, loop exits
     run_round = _round_factory([[{"subquestion_id": "Q1", "sources": [], "signals": {}}]])
     devs, rounds = run_search_loop(_LoopProvider(), "deep", run_round)
@@ -281,7 +281,7 @@ def test_loop_calm_run_exits_after_one_round(tmp_path):
     assert devs == []
 
 
-def test_loop_cheap_trigger_spawns_one_more_round(tmp_path):
+def test_loop_cheap_trigger_spawns_one_more_round():
     # round 1 fires empty_result (cheap); round 2 fires nothing -> 2 rounds, 1 pursued
     run_round = _round_factory([[_sig("empty_result")], [{"subquestion_id": "Q1", "sources": [], "signals": {}}]])
     devs, rounds = run_search_loop(_LoopProvider(), "deep", run_round)
@@ -306,6 +306,8 @@ def test_loop_respects_depth_limit():
     assert rounds == 3
     pursued = [d for d in devs if d.status == "pursued"]
     assert len(pursued) == 2  # two spawns allowed before the cap
+    nots = [d for d in devs if d.status == "not_pursued"]
+    assert len(nots) == 1 and "depth_limit" in nots[0].rationale
 
 
 def test_loop_terminates_when_cheap_budget_drained():
@@ -314,3 +316,32 @@ def test_loop_terminates_when_cheap_budget_drained():
     run_round = _round_factory([[_sig("empty_result")]] * 50)
     devs, rounds = run_search_loop(_LoopProvider(), "deep", run_round)
     assert rounds <= 3  # depth cap bites first; loop provably stops
+
+
+def test_loop_cross_agent_contradiction_becomes_deviation():
+    # scan reports a contradiction the sub-agents can't see; it must become a
+    # (cross-agent) candidate, survive the Opus filter, and be recorded as a deviation.
+    class _ContradictionProvider:
+        name = "mock"
+        def complete(self, prompt, *, system="", model_tier="mid"):
+            if "CONTRADICTION:" in prompt:          # scan prompt
+                return "CONTRADICTION: Q1 vs Q2 — figures disagree"
+            return "JUSTIFIED: investigate the conflict"   # decision prompt
+        def fanout(self, tasks, *, model_tier="cheap"):
+            return ["" for _ in tasks]
+
+    # two agents, no per-agent signals -> the only candidate comes from the scan.
+    # round 2 onward: the factory's default rows also have 2 agents, but to stop the
+    # loop we need a round whose scan finds nothing; give round 2 a provider-independent
+    # calm by scripting a single-agent round (scan skipped when <2 agents).
+    scripts = [
+        [{"subquestion_id": "Q1", "sources": [], "signals": {}},
+         {"subquestion_id": "Q2", "sources": [], "signals": {}}],
+        [{"subquestion_id": "Q1", "sources": [], "signals": {}}],  # <2 agents -> scan skipped -> calm -> stop
+    ]
+    run_round = _round_factory(scripts)
+    devs, rounds = run_search_loop(_ContradictionProvider(), "deep", run_round)
+    cross = [d for d in devs if d.subquestion == "(cross-agent)"]
+    assert len(cross) == 1
+    assert cross[0].trigger == "contradiction"
+    assert cross[0].status == "pursued"

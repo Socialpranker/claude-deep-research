@@ -214,13 +214,6 @@ def decide_deviations(provider, candidates: list[Candidate]) -> list[Candidate]:
     return kept
 
 
-@dataclass
-class RoundResult:
-    index: int
-    depth: int
-    agent_outputs: list[dict]
-
-
 def run_search_loop(provider, depth: str, run_round) -> tuple[list[Deviation], int]:
     """Drive Phase 4 as a loop. Returns (deviations, total_rounds_run).
 
