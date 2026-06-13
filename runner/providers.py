@@ -119,9 +119,14 @@ class OpenAICompatProvider:
         return self.model_override or self.TIER_MODEL[tier]
 
     def complete(self, prompt: str, *, system: str = "", model_tier: str = "mid") -> str:
-        messages = ([{"role": "system", "content": system}] if system else []) + \
-                   [{"role": "user", "content": prompt}]
-        resp = self.client.chat.completions.create(model=self._model_for(model_tier), messages=messages)
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+        model = self._model_for(model_tier)
+        resp = self.client.chat.completions.create(model=model, messages=messages)
+        if not resp.choices:
+            raise ValueError(f"OpenAI API returned no choices (model={model})")
         return resp.choices[0].message.content or ""
 
     def fanout(self, tasks: list[str], *, model_tier: str = "cheap") -> list[str]:

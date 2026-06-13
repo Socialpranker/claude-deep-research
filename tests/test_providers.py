@@ -178,3 +178,21 @@ def test_openai_fanout_preserves_order():
     )
     p = OpenAICompatProvider(client=client)
     assert p.fanout(["a", "b"]) == ["A", "B"]
+
+
+def test_openai_complete_model_override_collapses_tiers():
+    client = MagicMock()
+    client.chat.completions.create.return_value = _openai_response("x")
+    p = OpenAICompatProvider(client=client, model_override="gpt-4o")
+    p.complete("q", model_tier="strong")
+    assert client.chat.completions.create.call_args.kwargs["model"] == "gpt-4o"
+
+
+def test_openai_complete_empty_choices_raises():
+    client = MagicMock()
+    resp = MagicMock()
+    resp.choices = []
+    client.chat.completions.create.return_value = resp
+    p = OpenAICompatProvider(client=client)
+    with pytest.raises(ValueError, match="no choices"):
+        p.complete("q")
