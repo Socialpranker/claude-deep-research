@@ -11,7 +11,7 @@
 
 ## Каналы поиска по жанрам
 
-См. `channels.md` за полный каталог 28 каналов. Здесь — рекомендованный mix per genre.
+См. `channels.md` за полный каталог <!--gen:count:channels-->28<!--/gen--> каналов. Здесь — рекомендованный mix per genre.
 
 | Жанр | Primary channels | Secondary | Use sparingly |
 |---|---|---|---|

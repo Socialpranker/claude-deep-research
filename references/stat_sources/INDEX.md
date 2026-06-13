@@ -144,7 +144,7 @@ stat_sources/
 
 - Categories in core: 14
 - Industries: 19
-- Total source entries: 280+
+- Total source entries: <!--gen:count:stat_sources-->460<!--/gen-->+
 - Sources distribution by access:
   - OPEN: ~190 (68%)
   - PARTIAL: ~70 (25%)
