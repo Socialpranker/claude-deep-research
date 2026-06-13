@@ -11,7 +11,7 @@ your own machine; the scripts score what the runs produced.
 
 ## The suite
 
-8 questions in `eval/questions/benchmark/`, one per file, spanning all 6 genres and
+8 questions in `eval/questions/benchmark/`, one per file, spanning all <!--gen:count:genres-->6<!--/gen--> genres and
 all 3 depths:
 
 | slug | genre | depth |

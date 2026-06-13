@@ -46,7 +46,7 @@ def test_unknown_key_raises():
 def test_render_values_has_all_keys():
     v = stamp_docs.render_values(REPO)
     for k in ("count:blocks", "count:channels", "count:stat_sources", "count:api",
-              "count:genres", "count:phases", "phases:list:ru", "phases:list:en",
+              "count:genres", "count:phases", "phases:list:ru",
               "phases:table:en"):
         assert k in v
     assert v["count:blocks"] == "103"

@@ -51,7 +51,6 @@ def render_values(repo: Path) -> dict[str, str]:
         raise ValueError("no phases — refusing to stamp")
 
     list_ru = " → ".join(p["name_ru"] for p in phases)
-    list_en = " → ".join(p["name_en"] for p in phases)
     table_rows = "\n".join(
         f"| **{p['id']}** | **{p['name_en']}** | {p['model']} / {p['effort']} |"
         for p in phases
@@ -65,7 +64,6 @@ def render_values(repo: Path) -> dict[str, str]:
         "count:genres": str(c["genres"]),
         "count:phases": str(len(phases)),
         "phases:list:ru": list_ru,
-        "phases:list:en": list_en,
         "phases:table:en": table_rows,
     }
 
