@@ -31,6 +31,11 @@ try:
 except ImportError:  # run as a script
     from providers import LLMProvider, build_provider
 
+try:
+    from .adaptive import run_search_loop, write_deviations
+except ImportError:  # run as a script
+    from adaptive import run_search_loop, write_deviations
+
 DEPTH_SOURCES = {"shallow": 6, "medium": 14, "deep": 28}
 DEPTH_FANOUT = {"shallow": 0, "medium": 3, "deep": 5}
 GENRE_BY_HINT = [
@@ -61,6 +66,7 @@ class RunState:
     genre: str = ""
     hypotheses: list[str] = field(default_factory=list)
     sources: list[dict] = field(default_factory=list)
+    deviations: list = field(default_factory=list)
 
     @property
     def dir(self) -> Path:
@@ -106,8 +112,21 @@ class Orchestrator:
     def search(self, s: RunState) -> None:
         n = DEPTH_SOURCES[s.depth]
         k = DEPTH_FANOUT[s.depth]
-        tasks = [f"Search subtopic {i} for: {s.question}" for i in range(max(1, k))]
-        self.p.fanout(tasks, model_tier="cheap")  # results discarded in scaffold
+
+        def run_round(round_index, depth, directives):
+            # scaffold: fan out, return placeholder agent outputs with empty signals.
+            # Real retrieval + real signals are downstream work; the loop machinery is
+            # what we exercise here. Round 1 carries the planned fan-out.
+            tasks = [f"[r{round_index}] Search subtopic {i} for: {s.question}"
+                     for i in range(max(1, k))]
+            self.p.fanout(tasks, model_tier="cheap")
+            return [{"subquestion_id": f"Q{i}", "sources": [], "signals": {}}
+                    for i in range(max(1, k))]
+
+        deviations, _rounds = run_search_loop(self.p, s.depth, run_round)
+        s.deviations = deviations
+        write_deviations(s.dir, s.slug, deviations)
+
         srcdir = s.dir / "sources"
         srcdir.mkdir(exist_ok=True)
         for i in range(1, n + 1):
