@@ -149,3 +149,33 @@ def write_deviations(run_dir: Path, topic: str, deviations: list[Deviation]) -> 
     path = run_dir / "deviations.md"
     path.write_text("\n".join(out).rstrip() + "\n", encoding="utf-8")
     return path
+
+
+def cross_agent_contradiction_scan(provider, agent_outputs: list[dict]) -> list[dict]:
+    """Cheap scan over the whole round's pool for cross-agent contradictions.
+
+    Returns a list of synthetic contradiction findings (each a dict with
+    trigger="contradiction" + detail). Catches conflicts no single sub-agent can see.
+    Convention for the provider's reply: a line starting with "CONTRADICTION:" reports
+    one; the literal "NONE" (or no such line) means none found.
+    """
+    if len(agent_outputs) < 2:
+        return []  # nothing to compare; don't spend a call
+    summary = "\n".join(
+        f"{a.get('subquestion_id', '?')}: " +
+        "; ".join(str(s.get("claim", s.get("url", ""))) for s in a.get("sources", []))
+        for a in agent_outputs
+    )
+    prompt = (
+        "Below are claims from independent search agents, one line per subquestion.\n"
+        "Report any DIRECT contradictions between subquestions. For each, output a line:\n"
+        "  CONTRADICTION: <Qa> vs <Qb> — <what conflicts>\n"
+        "If there are none, output exactly: NONE\n\n" + summary
+    )
+    reply = provider.complete(prompt, model_tier="cheap")
+    findings = []
+    for line in reply.splitlines():
+        line = line.strip()
+        if line.upper().startswith("CONTRADICTION:"):
+            findings.append({"trigger": "contradiction", "detail": line.split(":", 1)[1].strip()})
+    return findings

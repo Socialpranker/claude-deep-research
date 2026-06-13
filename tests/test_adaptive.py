@@ -137,3 +137,50 @@ def test_write_deviations_empty_list_still_writes_header(tmp_path):
     path = write_deviations(tmp_path, "topic", [])
     assert path.exists()
     assert "# Deviations — topic" in path.read_text(encoding="utf-8")
+
+
+from runner.adaptive import cross_agent_contradiction_scan
+
+
+class _ScanProvider:
+    """Mock provider: complete() returns whatever verdict we seed."""
+    name = "mock"
+    def __init__(self, verdict: str):
+        self._verdict = verdict
+        self.calls = []
+    def complete(self, prompt, *, system="", model_tier="mid"):
+        self.calls.append((prompt, model_tier))
+        return self._verdict
+    def fanout(self, tasks, *, model_tier="cheap"):
+        return [self.complete(t, model_tier=model_tier) for t in tasks]
+
+
+def _agent(qid, claim):
+    return {"subquestion_id": qid, "sources": [{"id": "S1", "claim": claim}], "signals": {}}
+
+
+def test_scan_uses_cheap_tier():
+    prov = _ScanProvider("NONE")
+    cross_agent_contradiction_scan(prov, [_agent("Q1", "x"), _agent("Q2", "y")])
+    assert prov.calls and prov.calls[0][1] == "cheap"
+
+
+def test_scan_no_contradiction_returns_empty():
+    prov = _ScanProvider("NONE")  # convention: "NONE" => no contradictions
+    found = cross_agent_contradiction_scan(prov, [_agent("Q1", "a"), _agent("Q2", "b")])
+    assert found == []
+
+
+def test_scan_reports_contradiction():
+    prov = _ScanProvider("CONTRADICTION: Q1 vs Q2 — market size disagree")
+    found = cross_agent_contradiction_scan(prov, [_agent("Q1", "10B"), _agent("Q2", "2B")])
+    assert len(found) == 1
+    assert found[0]["trigger"] == "contradiction"
+    assert "Q1" in found[0]["detail"] and "Q2" in found[0]["detail"]
+
+
+def test_scan_skips_when_fewer_than_two_agents():
+    prov = _ScanProvider("CONTRADICTION: anything")
+    found = cross_agent_contradiction_scan(prov, [_agent("Q1", "only one")])
+    assert found == []          # nothing to compare against
+    assert prov.calls == []     # and we didn't waste a call
