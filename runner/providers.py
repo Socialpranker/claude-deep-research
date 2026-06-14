@@ -18,6 +18,7 @@ import os
 from typing import Callable, Protocol, runtime_checkable
 
 TIERS = ("strong", "mid", "cheap")
+SEARCH_TRIGGERS = ("empty_result", "citation_lead", "unexpected_finding", "contradiction")
 
 MAX_TOKENS = 4096
 
@@ -44,6 +45,15 @@ class LLMProvider(Protocol):
         """Run N independent tasks (the Phase-4 search fan-out)."""
         ...
 
+    def search(self, subquery: str, *, subquestion_id: str = "Q0", model_tier: str = "cheap") -> dict:
+        """One sub-agent search round. Returns an agent-output blob:
+            {"subquestion_id": str,
+             "sources": [{"id": str, "url": str, "title": str, "claim": str}, ...],
+             "signals": {trigger: {"fired": bool, "detail": str | None}}}
+        where trigger in ("empty_result", "citation_lead", "unexpected_finding", "contradiction").
+        The shape matches what runner.adaptive.parse_signals consumes."""
+        ...
+
 
 class DryRunProvider:
     """Deterministic, no-network provider. Produces stable placeholder text so the
@@ -61,6 +71,18 @@ class DryRunProvider:
         # local thread pool mirrors real sub-agent parallelism without any model
         with concurrent.futures.ThreadPoolExecutor(max_workers=min(5, len(tasks) or 1)) as ex:
             return list(ex.map(lambda t: self.complete(t, model_tier=model_tier), tasks))
+
+    def search(self, subquery: str, *, subquestion_id: str = "Q0", model_tier: str = "cheap") -> dict:
+        assert model_tier in TIERS, f"unknown tier {model_tier}"
+        h = hashlib.sha1(subquery.encode()).hexdigest()[:8]
+        sources = [
+            {"id": f"s{h[:4]}{i}", "url": f"https://example.com/source-{h}-{i}",
+             "title": f"Fixture source {i} for {subquery[:40]}",
+             "claim": f"(dryrun claim {i})"}
+            for i in range(1, 3)
+        ]
+        signals = {t: {"fired": False, "detail": None} for t in SEARCH_TRIGGERS}
+        return {"subquestion_id": subquestion_id, "sources": sources, "signals": signals}
 
 
 class ClaudeProvider:
