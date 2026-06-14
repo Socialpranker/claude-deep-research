@@ -6,6 +6,19 @@ This folder is published as a GitHub Pages site at:
 https://socialpranker.github.io/claude-deep-research/
 ```
 
+> **Canonical URL.** The site is served from the **`Socialpranker`** account, so the
+> only correct host is `socialpranker.github.io`. Any other GitHub Pages host
+> (e.g. `ivanterescheenko-ai.github.io`) is **wrong** and returns 404.
+>
+> The "About → website" link in the GitHub sidebar is the repo's **homepage field**,
+> *not* a file in this repo — editing `_config.yml` or `index.html` does **not** change it.
+> Fix it in **Settings → General → Website**, or via CLI:
+>
+> ```
+> gh api -X PATCH repos/Socialpranker/claude-deep-research \
+>   -f homepage="https://socialpranker.github.io/claude-deep-research/"
+> ```
+
 ## How to enable
 
 1. Go to repo Settings → Pages
