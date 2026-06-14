@@ -10,6 +10,8 @@ Give the system the *capability* to do real web search, by introducing a `search
 
 This is **Stage 1 of Phase 5**: the contract, the `DryRunProvider` fixture implementation, and the orchestrator wiring. The real `ClaudeProvider.search()` (which calls the Anthropic `web_search` server tool) is **Stage 2** and is explicitly out of scope here — it lands as a single, well-bounded follow-up against this same contract.
 
+> **Stage 1 implemented (2026-06-14).** `search()` is on the `LLMProvider` Protocol; `DryRunProvider.search()` returns the deterministic fixture; `ClaudeProvider`/`OpenAICompatProvider` raise `NotImplementedError`; `orchestrator.search()` routes through `provider.search()` and sources come from the returned blobs. `pytest -q` → 89 passed / 4 skipped, doc-gate green, deep DryRun validates `--strict`. Stage 2 (live `web_search`) remains open.
+
 The motivating fact: today the whole adaptive loop runs only on placeholders (`orchestrator.py:116-124` returns `signals: {}`; `:134` writes `example.com` URLs), so in production the loop always exits after round 1 because no trigger ever fires. Stage 1 puts the seam in place; Stage 2 lights it up.
 
 ## Background: where the code is today
