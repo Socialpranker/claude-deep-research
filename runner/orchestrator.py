@@ -127,22 +127,29 @@ class Orchestrator:
         s.deviations = deviations
         write_deviations(s.dir, s.slug, deviations)
 
-        # sources from collected blobs (dedup by url), capped at n
+        # sources from collected blobs: dedup by url, keep the first n unique.
+        # `written` (not the scan index) is the cap gate, so early duplicates don't
+        # burn slots and under-fill below n. NOTE (stage 2): src["id"] is provider-
+        # supplied and not guaranteed unique across sub-agents; the numeric prefix
+        # keeps filenames distinct, but the `id` field itself could clash on a live
+        # provider — revisit (dedup/disambiguate on id) when web_search lands.
         srcdir = s.dir / "sources"
         srcdir.mkdir(exist_ok=True)
         seen: set[str] = set()
         flat = [src for blob in collected for src in blob.get("sources", [])]
-        for i, src in enumerate(flat, start=1):
-            if i > n or src["url"] in seen:
+        written = 0
+        for src in flat:
+            if written >= n or src["url"] in seen:
                 continue
             seen.add(src["url"])
-            sid = src.get("id", f"s{i:02d}")
+            written += 1
+            sid = src.get("id", f"s{written:02d}")
             url = src["url"]
-            stype = "Primary" if i % 2 else "Academic"
+            stype = "Primary" if written % 2 else "Academic"  # scaffold: type is placeholder, not derived from the source
             s.sources.append({"id": sid, "url": url, "type": stype})
             fm = (f"---\nid: {sid}\nurl: {url}\ntitle: {src.get('title', 'Source')}\n"
                   f"access: OPEN\ntype: {stype}\n---\n{src.get('claim', '')}\n")
-            (srcdir / f"{i:02d}_{sid}.md").write_text(fm, encoding="utf-8")
+            (srcdir / f"{written:02d}_{sid}.md").write_text(fm, encoding="utf-8")
 
         rows = ["id,title,url,type,used"]
         rows += [f"{x['id']},Source {x['id']},{x['url']},{x['type']},Y" for x in s.sources]
