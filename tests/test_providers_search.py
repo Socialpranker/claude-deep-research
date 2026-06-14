@@ -1,4 +1,11 @@
-from runner.providers import DryRunProvider, SEARCH_TRIGGERS
+import pytest
+
+from runner.providers import (
+    ClaudeProvider,
+    DryRunProvider,
+    OpenAICompatProvider,
+    SEARCH_TRIGGERS,
+)
 
 
 def test_dryrun_search_returns_expected_shape():
@@ -28,10 +35,6 @@ def test_dryrun_search_varies_by_subquery():
     b = p.search("query beta", subquestion_id="Q1")
     # different subqueries -> different source ids/urls (hash-derived)
     assert a["sources"] != b["sources"]
-
-
-import pytest
-from runner.providers import ClaudeProvider, OpenAICompatProvider
 
 
 def test_claude_search_not_implemented_yet():
