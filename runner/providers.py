@@ -120,6 +120,10 @@ class ClaudeProvider:
             limit=self.max_concurrency,
         )
 
+    def search(self, subquery: str, *, subquestion_id: str = "Q0", model_tier: str = "cheap") -> dict:
+        raise NotImplementedError(
+            "ClaudeProvider.search (real web_search) lands in Phase 5 stage 2")
+
 
 class OpenAICompatProvider:
     """Adapter for any OpenAI-compatible endpoint: OpenAI itself, OpenRouter,
@@ -158,6 +162,10 @@ class OpenAICompatProvider:
             [lambda t=t: self.complete(t, model_tier=model_tier) for t in tasks],
             limit=self.max_concurrency,
         )
+
+    def search(self, subquery: str, *, subquestion_id: str = "Q0", model_tier: str = "cheap") -> dict:
+        raise NotImplementedError(
+            "web_search is Anthropic-specific; OpenAICompatProvider has no search backend")
 
 
 def _require_env(name: str) -> None:

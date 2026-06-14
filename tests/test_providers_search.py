@@ -28,3 +28,20 @@ def test_dryrun_search_varies_by_subquery():
     b = p.search("query beta", subquestion_id="Q1")
     # different subqueries -> different source ids/urls (hash-derived)
     assert a["sources"] != b["sources"]
+
+
+import pytest
+from runner.providers import ClaudeProvider, OpenAICompatProvider
+
+
+def test_claude_search_not_implemented_yet():
+    # construct without touching the network: pass a dummy client
+    p = ClaudeProvider(client=object())
+    with pytest.raises(NotImplementedError):
+        p.search("x")
+
+
+def test_openai_search_not_implemented_yet():
+    p = OpenAICompatProvider(client=object())
+    with pytest.raises(NotImplementedError):
+        p.search("x")
