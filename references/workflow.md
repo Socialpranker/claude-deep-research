@@ -386,7 +386,12 @@ User confirms continue.
 
 **Model:** главный поток `sonnet` / `medium`. Sub-agents — **разные модели** по типу подзадачи (см. `model_routing.md` секция «Routing для sub-agents»): web/news/api-direct → `haiku`, academic/long-source → `sonnet`, heavy reasoning subtask → `opus`.
 
-**Phase 4 = 4 шага в строгом порядке:** Dispatch → Launch → Fetch → Save. Не пропускай Dispatch — без него Launch будет хаотичным.
+**Phase 4 is an orchestrator-driven loop, not a single salvo.** Round 1 executes the
+approved plan (Phase 4.0 dispatch). After *every* round the orchestrator evaluates the
+aggregated results and may spend a bounded *deviation* to launch another round. The
+plan stays authoritative as the starting point; deviations are bounded and recorded.
+
+**Phase 4 = 4 шага в строгом порядке (Round 1):** Dispatch → Launch → Fetch → Save. Не пропускай Dispatch — без него Launch будет хаотичным.
 
 ### 4.0 Source Dispatch (НОВЫЙ обязательный шаг)
 
@@ -428,7 +433,76 @@ User confirms continue.
 - Никаких «соберём в конце» — пиши сразу после dedup.
 - Если источник покрывает несколько подвопросов — указывай в frontmatter все через `subquestion_ids:`, а не дублируй файл.
 
-**Output Phase 4:** заполненная папка `sources/` + обновлённый `sources.csv` + flags «open gaps» в plan.md для подвопросов где не удалось набрать ≥3 разнотипных источников.
+**Output Phase 4 (Round 1):** заполненная папка `sources/` + обновлённый `sources.csv` + flags «open gaps» в plan.md для подвопросов где не удалось набрать ≥3 разнотипных источников.
+
+### Round structure
+
+1. **Round 1 = the plan.** Run Phase 4.0 (Source Dispatch) → Phase 4.1 (N sub-agents
+   following the fixed dispatch) → 4.2 (dedup) → 4.3 (save sources). This always runs.
+2. **Each sub-agent emits a `signals` block** in its JSON (in addition to sources):
+
+   ```json
+   {
+     "subquestion_id": "Q3",
+     "round": 1,
+     "sources": [ ... ],
+     "signals": {
+       "empty_result":       { "fired": true,  "detail": "0 relevant hits on `academic`" },
+       "unexpected_finding": { "fired": false, "detail": null },
+       "contradiction":      { "fired": false, "detail": null },
+       "citation_lead":      { "fired": true,  "detail": "S07 cites Gartner 2024, no link" }
+     }
+   }
+   ```
+
+   Sub-agents signal **generously** (high recall). They report observations; they do
+   NOT decide to deviate.
+
+3. **Orchestrator evaluation (after every round, `strong` tier / Opus):**
+   - Aggregate all sub-agent JSON for the round.
+   - **Cross-agent contradiction scan** (cheap tier): scan the whole pool for sources
+     that conflict — this catches contradictions no single sub-agent can see (each
+     sees only its own subquestion).
+   - Opus reviews flags + scan + aggregated output and selects which triggers are
+     *justified* (strict precision — a sub-agent's `unexpected_finding` is a candidate,
+     not an automatic spend).
+   - For each justified trigger, if budget for its class remains AND depth < limit:
+     classify cheap/expensive, debit the counter, write a `deviations.md` record,
+     and launch the next round. Otherwise write a `not_pursued` record.
+4. **The loop ends** when no justified trigger remains, OR both budgets are exhausted,
+   OR the depth limit is reached. Then proceed to Phase 5.
+
+### Triggers (4) and their classes
+
+| Trigger | Class | Meaning |
+|---|---|---|
+| `empty_result` | cheap (self-correction) | a planned channel returned nothing relevant |
+| `citation_lead` | cheap (self-correction) | a source cites an unreachable primary source |
+| `unexpected_finding` | expensive (scope-expansion) | an important angle outside the plan surfaced |
+| `contradiction` | expensive (scope-expansion) | sources conflict |
+
+*Self-correction finishes already-planned work (doesn't change scope) → generous
+budget. Scope-expansion departs from the approved plan → hard ceiling.*
+
+### Budget & depth (by research depth)
+
+| Depth | cheap | expensive | depth (nesting) limit |
+|---|---|---|---|
+| shallow | 2 | 0 | 1 |
+| medium | 4 | 1 | 1 |
+| deep | 8 | 3 | 2 |
+
+- `shallow expensive = 0`: a shallow `unexpected_finding`/`contradiction` is recorded
+  `not_pursued: budget_exhausted`, never run. Self-correction still works on shallow.
+- **Depth** = how many deviation-spawned rounds deep the current round is (Round 1 =
+  depth 0). A deviation from a depth-limit round cannot spawn another.
+- Debit is atomic, orchestrator-only, before launching the next round.
+
+### `deviations.md`
+
+Written beside `plan.md` / `sources/`. One record per *considered* trigger (both
+`pursued` and `not_pursued` — **exhausted budget/depth still leaves a record; never a
+silent skip**). Phase 6 audits it; Phase 7 reads `not_pursued`/`carry_forward`.
 
 ## Фаза 5. Скоринг и триангуляция
 
@@ -461,7 +535,7 @@ User confirms continue.
 3. Загрузи нужные категорийные файлы `blocks/*.md` (только те что нужны для выбранных blocks). Прогрессивно — не сразу все.
 4. Для каждой гипотезы — собери поддерживающие/опровергающие цитаты. Опционально вынеси крупные в `findings/FN.md` (см. `blocks/close.md` блок Z6).
 5. Собери черновик `<date>_<genre>.md` из выбранных блоков по порядку из `plan.md`. Каждый блок — по шаблону из своего категорийного файла.
-6. **Adversarial pass** (см. `adversarial_pass.md`) — 4 вопроса. Counter-arguments — блок `Z1` в отчёте. Не маскируй несогласие.
+6. **Adversarial pass** (см. `adversarial_pass.md`) — 5 вопросов. Counter-arguments — блок `Z1` в отчёте. Не маскируй несогласие.
 7. Если в системе есть `anthropic-skills:humanizer-ru` — прогони финальный отчёт через него.
 8. Сохрани финальный отчёт.
 
@@ -479,6 +553,12 @@ User confirms continue.
 5. Извлеки **гипотезы H1-H4** из plan.md с финальным статусом из A4 (hypotheses-outcome).
 6. Запиши в `<root>/<slug>/refresh_targets.md` по шаблону **Z11** из `blocks/close.md`.
 
+**Refresh candidates — дополнительный источник:**
+
+- **Carry-forward deviations.** Read `deviations.md` for `not_pursued` records with a
+  `carry_forward` field; each is a first-class refresh-target candidate (an angle the
+  search loop identified but could not pursue within budget/depth).
+
 **Output:** файл `refresh_targets.md` рядом с `plan.md`. Используется при последующих `update <slug>` — см. `refresh_protocol.md`.
 
 **Anti-patterns:** см. блок Z11 в `blocks/close.md`.
@@ -494,7 +574,7 @@ User confirms continue.
 - [ ] Все required блоки для жанра присутствуют (см. `genres.md`)
 - [ ] Каждое утверждение имеет ссылку на конкретный [sNN] или помечено `[без подтверждения]`
 - [ ] Каналы coverage ≥3 разных типов (см. plan.md секция 14)
-- [ ] Adversarial pass выполнен (4 вопроса), Z1 counter-arguments записаны
+- [ ] Adversarial pass выполнен (5 вопросов), Z1 counter-arguments записаны
 - [ ] Hypotheses outcome таблица заполнена — все H1-H4 имеют status
 - [ ] Risk register из plan.md (секция 10) проверен — risks которые реализовались отмечены, mitigation работала?
 - [ ] Open questions перечислены (Z2)

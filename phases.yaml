@@ -31,12 +31,18 @@ phases:
     model: sonnet
     effort: low
     depth_gate: deep
+  # Phase 4 is an orchestrator-driven LOOP (round -> Opus eval -> optional
+  # bounded deviation round). The per-round search fan-out is sonnet/medium;
+  # the between-rounds evaluation runs at the strong tier. This is ONE phase
+  # whose internal behavior is a loop — no new phase id is introduced, so the
+  # phase count is unchanged. See references/workflow.md "Phase 4" for the loop.
   - id: "4"
     name_ru: "Поиск"
     name_en: "Search"
     model: sonnet
     effort: medium
     depth_gate: shallow
+    loop: "true"
   - id: "5"
     name_ru: "Скоринг + триангуляция"
     name_en: "Scoring + triangulation"
