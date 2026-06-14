@@ -1,11 +1,19 @@
 import pytest
 
+from runner.adaptive import TRIGGERS as ADAPTIVE_TRIGGERS
 from runner.providers import (
     ClaudeProvider,
     DryRunProvider,
     OpenAICompatProvider,
     SEARCH_TRIGGERS,
 )
+
+
+def test_search_triggers_match_adaptive_taxonomy():
+    # providers.SEARCH_TRIGGERS and adaptive.TRIGGERS are defined independently;
+    # pin them together so a Stage-2 edit to one module can't silently desync the
+    # DryRun fixture from the loop's signal reader (parse_signals).
+    assert SEARCH_TRIGGERS == ADAPTIVE_TRIGGERS
 
 
 def test_dryrun_search_returns_expected_shape():
