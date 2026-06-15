@@ -123,6 +123,28 @@ class DryRunProvider:
         return {"subquestion_id": subquestion_id, "sources": sources, "signals": signals}
 
 
+def _collect_call1(resp) -> tuple[str, list[dict]]:
+    """From a web_search call-1 response, return (answer_text, raw_sources).
+
+    raw_sources are {url, title} dicts harvested from web_search_tool_result
+    blocks. Defensive: tolerate blocks missing url/title (skip), and a
+    tool-result block whose .content is not a list.
+    """
+    texts: list[str] = []
+    sources: list[dict] = []
+    for block in getattr(resp, "content", []) or []:
+        btype = getattr(block, "type", None)
+        if btype == "text":
+            texts.append(getattr(block, "text", ""))
+        elif btype == "web_search_tool_result":
+            for item in getattr(block, "content", []) or []:
+                url = getattr(item, "url", None)
+                if not url:
+                    continue
+                sources.append({"url": url, "title": getattr(item, "title", "") or ""})
+    return "".join(texts), sources
+
+
 class ClaudeProvider:
     """Adapter for Claude via the anthropic SDK. fanout = N parallel complete()
     calls (ThreadPoolExecutor); complete() maps tiers to Opus/Sonnet/Haiku."""

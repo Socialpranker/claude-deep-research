@@ -1,3 +1,6 @@
+import json
+import types
+
 import pytest
 
 from runner.adaptive import TRIGGERS as ADAPTIVE_TRIGGERS
@@ -8,6 +11,15 @@ from runner.providers import (
     SEARCH_TRIGGERS,
     SIGNALS_SCHEMA,
 )
+
+
+def _block(**kw):
+    # a content block as a simple attribute bag (mimics the SDK's block objects)
+    return types.SimpleNamespace(**kw)
+
+
+def _resp(content, stop_reason="end_turn"):
+    return types.SimpleNamespace(content=content, stop_reason=stop_reason)
 
 
 def test_signals_schema_is_structured_output_safe():
@@ -97,3 +109,30 @@ def test_claude_search_model_is_mid_not_cheap():
 def test_claude_search_model_override_wins():
     p = ClaudeProvider(client=object(), model_override="claude-opus-4-8")
     assert p._search_model("cheap") == "claude-opus-4-8"
+
+
+def test_collect_call1_pulls_text_and_sources():
+    from runner.providers import _collect_call1
+    resp = _resp([
+        _block(type="text", text="Widgets market is ~$5B. "),
+        _block(type="web_search_tool_result", content=[
+            _block(type="web_search_result", url="https://acme.example/report", title="Acme Report"),
+            _block(type="web_search_result", url="https://data.example/widgets", title="Widget Data"),
+        ]),
+        _block(type="text", text="Growth is 4%/yr."),
+    ])
+    text, sources = _collect_call1(resp)
+    assert text == "Widgets market is ~$5B. Growth is 4%/yr."
+    assert sources == [
+        {"url": "https://acme.example/report", "title": "Acme Report"},
+        {"url": "https://data.example/widgets", "title": "Widget Data"},
+    ]
+
+
+def test_collect_call1_handles_no_search():
+    # model answered without searching -> empty sources, still returns text
+    from runner.providers import _collect_call1
+    resp = _resp([_block(type="text", text="No search needed.")])
+    text, sources = _collect_call1(resp)
+    assert text == "No search needed."
+    assert sources == []
