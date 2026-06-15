@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -40,6 +41,11 @@ try:
     from .scoring import compute_total, triangulate, render_triangulation
 except ImportError:  # run as a script
     from scoring import compute_total, triangulate, render_triangulation
+
+try:
+    from .capabilities import audit_env, render_capabilities
+except ImportError:  # run as a script
+    from capabilities import audit_env, render_capabilities
 
 DEPTH_SOURCES = {"shallow": 6, "medium": 14, "deep": 28}
 DEPTH_FANOUT = {"shallow": 0, "medium": 3, "deep": 5}
@@ -74,6 +80,7 @@ class RunState:
     deviations: list = field(default_factory=list)
     round_source_ids: dict = field(default_factory=dict)  # round_index -> [source_id]
     triangulation: list = field(default_factory=list)     # Phase 5 output
+    capabilities: list = field(default_factory=list)      # Phase 3.5: env-key audit
 
     @property
     def dir(self) -> Path:
@@ -114,6 +121,23 @@ class Orchestrator:
             "- (TODO: channels + stat/api sources per subtopic from references/)",
         ]
         (s.dir / "plan.md").write_text("\n".join(body), encoding="utf-8")
+
+    # --- Phase 3.5: capability discovery -----------------------------------
+    def discover_capabilities(self, s: RunState) -> None:
+        s.capabilities = audit_env(dict(os.environ))
+        available = [a["key"] for a in s.capabilities if a["present"]]
+        prompt = (
+            "Map the research subtopics to information sources, given the available "
+            "API keys. For any source whose key is missing, note the fallback.\n\n"
+            f"Question: {s.question}\n"
+            f"Hypotheses:\n" + "\n".join(f"- {h}" for h in s.hypotheses) + "\n\n"
+            f"Available API keys: {', '.join(available) or '(none)'}\n"
+        )
+        mapping = self.p.complete(prompt, model_tier="mid")
+        block = render_capabilities(s.capabilities, mapping)
+        plan_path = s.dir / "plan.md"
+        existing = plan_path.read_text(encoding="utf-8")
+        plan_path.write_text(existing + block, encoding="utf-8")
 
     # --- Phase 4: search (fan-out) ----------------------------------------
     def search(self, s: RunState) -> None:
@@ -269,6 +293,8 @@ class Orchestrator:
         self.reframe(s)
         self.choose_genre(s)
         self.plan(s)
+        if s.depth != "shallow":
+            self.discover_capabilities(s)
         self.search(s)
         self.score(s)
         self.synthesize(s)
