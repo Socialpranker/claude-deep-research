@@ -293,6 +293,8 @@ class Orchestrator:
         self.reframe(s)
         self.choose_genre(s)
         self.plan(s)
+        if s.depth != "shallow":
+            self.discover_capabilities(s)
         self.search(s)
         self.score(s)
         self.synthesize(s)
