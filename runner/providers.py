@@ -92,6 +92,17 @@ _SEARCH_PROMPT = (
     "Search the web to answer this sub-question for a research report. "
     "Cite concrete sources.\n\nSub-question: {subquery}"
 )
+_SCORE_PROMPT = (
+    "Score each source on three axes (integers 1-5) using this rubric:\n"
+    "- credibility: 5=peer-reviewed/official/primary, 3=quality edited media, 1=anonymous forum.\n"
+    "- recency: 5=current, 1=clearly outdated for the question.\n"
+    "- bias: 5=neutral/balanced, 1=strongly partisan or promotional.\n"
+    "Classify `type` as one of: Primary, Academic, Industry-media, General-media, "
+    "Expert-blog, Forum, Other.\n"
+    "For `hypothesis_evidence`, judge each hypothesis id against the source: "
+    "supports | contradicts | partial | neutral.\n\n"
+    "Hypotheses:\n{hypotheses}\n\nSources:\n{sources}\n"
+)
 _SIGNALS_PROMPT = (
     "You just researched a sub-question. Return JSON matching the schema: a list "
     "of `sources` (id, url, title, claim) and a `signals` object. For each signal, "
@@ -329,6 +340,23 @@ class ClaudeProvider:
         )
         return _parse_call2(resp2, subquestion_id)
 
+    def score(self, sources: list[dict], hypotheses: list[str],
+              *, model_tier: str = "cheap") -> dict:
+        rendered_sources = "\n".join(
+            f"- [{s['id']}] {s.get('title', '')}: {s.get('url', '')} — {s.get('claim', '')}"
+            for s in sources
+        ) or "(no sources)"
+        rendered_hyps = "\n".join(f"- {h}" for h in hypotheses) or "(none)"
+        prompt = _SCORE_PROMPT.format(hypotheses=rendered_hyps, sources=rendered_sources)
+        resp = self.client.messages.create(
+            model=self._model_for(model_tier),
+            max_tokens=MAX_TOKENS,
+            output_config={"format": {"type": "json_schema", "schema": SCORE_SCHEMA}},
+            messages=[{"role": "user", "content": prompt}],
+        )
+        text = "".join(b.text for b in resp.content if b.type == "text")
+        return json.loads(text)
+
 
 class OpenAICompatProvider:
     """Adapter for any OpenAI-compatible endpoint: OpenAI itself, OpenRouter,
@@ -371,6 +399,21 @@ class OpenAICompatProvider:
     def search(self, subquery: str, *, subquestion_id: str = "Q0", model_tier: str = "cheap") -> dict:
         raise NotImplementedError(
             "web_search is Anthropic-specific; OpenAICompatProvider has no search backend")
+
+    def score(self, sources: list[dict], hypotheses: list[str],
+              *, model_tier: str = "cheap") -> dict:
+        rendered_sources = "\n".join(
+            f"- [{s['id']}] {s.get('title', '')}: {s.get('url', '')} — {s.get('claim', '')}"
+            for s in sources
+        ) or "(no sources)"
+        rendered_hyps = "\n".join(f"- {h}" for h in hypotheses) or "(none)"
+        prompt = _SCORE_PROMPT.format(hypotheses=rendered_hyps, sources=rendered_sources)
+        resp = self.client.chat.completions.create(
+            model=self._model_for(model_tier),
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+        )
+        return json.loads(resp.choices[0].message.content)
 
 
 def _require_env(name: str) -> None:

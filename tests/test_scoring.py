@@ -1,3 +1,5 @@
+import json
+import pytest
 from runner.scoring import compute_total, render_triangulation, triangulate
 from runner.providers import DryRunProvider
 
@@ -74,3 +76,35 @@ def test_dryrun_score_is_stable_across_calls():
     a = p.score(srcs, ["H1: a"], model_tier="cheap")
     b = p.score(srcs, ["H1: a"], model_tier="cheap")
     assert a == b
+
+
+class _FakeMsg:
+    def __init__(self, text):
+        self.content = [type("B", (), {"type": "text", "text": text})()]
+
+class _FakeClient:
+    def __init__(self, payload):
+        self._payload = payload
+        self.messages = type("M", (), {"create": self._create})()
+    def _create(self, **kw):
+        return _FakeMsg(json.dumps(self._payload))
+
+def test_claude_score_parses_structured_json():
+    from runner.providers import ClaudeProvider
+    payload = {"sources": [{"id": "s01", "credibility": 5, "recency": 4, "bias": 3,
+                            "type": "Primary", "hypothesis_evidence": {"H1": "supports"}}]}
+    p = ClaudeProvider(client=_FakeClient(payload))
+    out = p.score([{"id": "s01", "url": "https://x", "title": "T", "claim": "c"}],
+                  ["H1: a"], model_tier="cheap")
+    assert out["sources"][0]["credibility"] == 5
+    assert out["sources"][0]["type"] == "Primary"
+
+@pytest.mark.live
+def test_claude_score_live():
+    from runner.providers import build_provider
+    p = build_provider("claude")
+    out = p.score([{"id": "s01", "url": "https://www.bls.gov/", "title": "BLS", "claim": "official labor stats"}],
+                  ["H1: official sources are authoritative"], model_tier="cheap")
+    s = out["sources"][0]
+    assert 1 <= s["credibility"] <= 5
+    assert "H1" in s["hypothesis_evidence"]
