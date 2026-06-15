@@ -16,6 +16,13 @@ except ImportError:  # run as a script
 
 DATA_DOMAINS = ("worldbank", "statista", "oecd", "data.gov", "stlouisfed")
 
+_TODO_ENTITY = ("<!-- TODO: pricing/careers/crunchbase split + sha256 hash"
+                " — требуют M2/M5 block-render -->")
+_TODO_NUMBER = ("<!-- TODO: series id + last_value + API access"
+                " — требуют N-block render -->")
+_TODO_TOPIC = ("<!-- TODO: OpenAlex concept IDs / GitHub topics / news keywords"
+               " — требуют Phase 4 discovery-метаданных в RunState -->")
+
 
 def extract_hypotheses(hypotheses: list[str], triangulation: list[dict]) -> list[dict]:
     """Pair each hypothesis with its triangulation status.
@@ -81,3 +88,62 @@ def extract_carry_forward(deviations_text: str) -> list[dict]:
         subq = sq.group(1).strip() if sq else "?"
         out.append({"subquestion": subq, "carry_forward": cf.group(1).strip()})
     return out
+
+
+def render_refresh_targets(slug: str, depth: str, hypotheses: list[dict],
+                           entities: list[dict], numbers: list[dict],
+                           carry: list[dict], *, today: str) -> str:
+    """Render <slug>/refresh_targets.md per the Z11 template. Pure: `today` is
+    passed in so the output is deterministic in tests."""
+    cadence = "30 days" if depth == "deep" else "90 days"
+    out = [
+        "---",
+        f"slug: {slug}",
+        f"last_research_date: {today}",
+        f"depth: {depth}",
+        f"update_cadence: {cadence}",
+        "---",
+        "",
+        f"# Refresh targets — {slug}",
+        "",
+        "## 1. Entities to track",
+    ]
+    if entities:
+        for e in entities:
+            out += [f"### {e['domain']}",
+                    f"- **Source URL:** {e['url']}",
+                    f"- **Why in scope:** {e['why'] or '—'}", ""]
+    else:
+        out += ["_none_", ""]
+    out.append(_TODO_ENTITY)
+
+    out += ["", "## 2. Numbers to refresh"]
+    if numbers:
+        for n in numbers:
+            out += [f"### {n['phrase']}", f"- **Source:** {n['url'] or '—'}", ""]
+    else:
+        out += ["_none_", ""]
+    out.append(_TODO_NUMBER)
+
+    out += ["", "## 3. Topic markers (discovery)", _TODO_TOPIC]
+
+    out += ["", "## 4. Hypotheses to re-test"]
+    if hypotheses:
+        for h in hypotheses:
+            out += [
+                f'### {h["id"]}: "{h["text"]}"',
+                f"- **Status at last research:** {h['status']}",
+                f"- **Supporting source types:** {h['supporting_types']}",
+                f'- **Watch for:** "{h["text"]} failed replication"; '
+                "retractions (RetractionWatch); counter-evidence", ""]
+    else:
+        out += ["_no hypotheses recorded_", ""]
+
+    out += ["## 5. Refresh candidates (carry-forward)"]
+    if carry:
+        for c in carry:
+            out.append(f"- **{c['subquestion']}** — {c['carry_forward']}")
+    else:
+        out.append("_none_")
+    out.append("")
+    return "\n".join(out)

@@ -1,4 +1,4 @@
-from runner.refresh import extract_carry_forward, extract_entities, extract_hypotheses, extract_numbers
+from runner.refresh import extract_carry_forward, extract_entities, extract_hypotheses, extract_numbers, render_refresh_targets
 
 
 def test_extract_hypotheses_maps_status():
@@ -108,3 +108,49 @@ def test_extract_carry_forward_defaults_subquestion():
     text = "## D1\n- carry_forward: orphan candidate\n"
     out = extract_carry_forward(text)
     assert out == [{"subquestion": "?", "carry_forward": "orphan candidate"}]
+
+
+def _render_sample():
+    hyps = [{"id": "H1", "text": "coffee boosts focus",
+             "status": "supported", "supporting_types": 3}]
+    entities = [{"domain": "acme.com", "url": "https://acme.com/pricing",
+                 "why": "Acme raised $5M"}]
+    numbers = [{"phrase": "GDP grew 3.2%", "url": "https://x.com/a"}]
+    carry = [{"subquestion": "Q5", "carry_forward": "deep-dive on pricing"}]
+    return render_refresh_targets("coffee-focus", "medium", hyps, entities,
+                                  numbers, carry, today="2026-06-15")
+
+
+def test_render_has_all_sections():
+    md = _render_sample()
+    assert "# Refresh targets — coffee-focus" in md
+    assert "## 1. Entities to track" in md
+    assert "## 2. Numbers to refresh" in md
+    assert "## 3. Topic markers" in md
+    assert "## 4. Hypotheses to re-test" in md
+    assert "## 5. Refresh candidates" in md
+
+
+def test_render_frontmatter_and_cadence():
+    md = _render_sample()
+    assert "slug: coffee-focus" in md
+    assert "last_research_date: 2026-06-15" in md
+    assert "update_cadence: 90 days" in md  # medium
+    deep = render_refresh_targets("s", "deep", [], [], [], [], today="2026-06-15")
+    assert "update_cadence: 30 days" in deep
+
+
+def test_render_emits_todo_markers():
+    md = _render_sample()
+    assert md.count("<!-- TODO") >= 3  # entities, numbers, topic markers
+
+
+def test_render_is_deterministic():
+    assert _render_sample() == _render_sample()
+
+
+def test_render_handles_empty():
+    md = render_refresh_targets("s", "medium", [], [], [], [], today="2026-06-15")
+    assert "_none_" in md
+    assert "_no hypotheses recorded_" in md
+    assert "# Refresh targets — s" in md  # не падает
