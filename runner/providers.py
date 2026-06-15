@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import concurrent.futures
 import hashlib
+import json
 import os
 from typing import Callable, Protocol, runtime_checkable
 
@@ -21,6 +22,59 @@ TIERS = ("strong", "mid", "cheap")
 SEARCH_TRIGGERS = ("empty_result", "citation_lead", "unexpected_finding", "contradiction")
 
 MAX_TOKENS = 4096
+
+# --- Stage 2: structured-output schema for the web_search signals call ---
+# Constraints (Anthropic structured outputs): every object needs
+# additionalProperties:false; no min/max length, no minItems, no recursion.
+_SIGNAL_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "fired": {"type": "boolean"},
+        "detail": {"type": ["string", "null"]},
+    },
+    "required": ["fired", "detail"],
+    "additionalProperties": False,
+}
+_SOURCE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "id": {"type": "string"},
+        "url": {"type": "string"},
+        "title": {"type": "string"},
+        "claim": {"type": "string"},
+    },
+    "required": ["id", "url", "title", "claim"],
+    "additionalProperties": False,
+}
+SIGNALS_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "sources": {"type": "array", "items": _SOURCE_SCHEMA},
+        "signals": {
+            "type": "object",
+            "properties": {t: _SIGNAL_SCHEMA for t in SEARCH_TRIGGERS},
+            "required": list(SEARCH_TRIGGERS),
+            "additionalProperties": False,
+        },
+    },
+    "required": ["sources", "signals"],
+    "additionalProperties": False,
+}
+
+_SEARCH_PROMPT = (
+    "Search the web to answer this sub-question for a research report. "
+    "Cite concrete sources.\n\nSub-question: {subquery}"
+)
+_SIGNALS_PROMPT = (
+    "You just researched a sub-question. Return JSON matching the schema: a list "
+    "of `sources` (id, url, title, claim) and a `signals` object. For each signal, "
+    "set fired=true with a short detail only if it genuinely applies:\n"
+    "- empty_result: the search found nothing useful\n"
+    "- citation_lead: a source points to another worth chasing\n"
+    "- unexpected_finding: a result contradicts the premise or surprises\n"
+    "- contradiction: two sources disagree\n\n"
+    "Sub-question: {subquery}\n\nYour findings:\n{answer}\n\nSources:\n{sources}"
+)
 
 
 def run_parallel(thunks: list[Callable[[], str]], *, limit: int = 5) -> list[str]:
@@ -85,6 +139,59 @@ class DryRunProvider:
         return {"subquestion_id": subquestion_id, "sources": sources, "signals": signals}
 
 
+def _empty_signals() -> dict:
+    return {t: {"fired": False, "detail": None} for t in SEARCH_TRIGGERS}
+
+
+def _parse_call2(resp, subquestion_id: str) -> dict:
+    """Parse the structured-output call-2 response into a contract blob.
+
+    Fail-safe: malformed JSON, a refusal, or a missing signals block yields a
+    valid blob with empty sources and all-fired:false signals — never raises,
+    so one bad cheap-model turn can't break the loop (mirrors parse_signals).
+    subquestion_id is always the caller's value, never the model's.
+    """
+    text = "".join(
+        getattr(b, "text", "") for b in (getattr(resp, "content", []) or [])
+        if getattr(b, "type", None) == "text"
+    )
+    try:
+        data = json.loads(text)
+        assert isinstance(data, dict)
+    except (ValueError, AssertionError):
+        return {"subquestion_id": subquestion_id, "sources": [], "signals": _empty_signals()}
+
+    sources = data.get("sources")
+    if not isinstance(sources, list):
+        sources = []
+    signals = data.get("signals")
+    if not isinstance(signals, dict):
+        signals = _empty_signals()
+    return {"subquestion_id": subquestion_id, "sources": sources, "signals": signals}
+
+
+def _collect_call1(resp) -> tuple[str, list[dict]]:
+    """From a web_search call-1 response, return (answer_text, raw_sources).
+
+    raw_sources are {url, title} dicts harvested from web_search_tool_result
+    blocks. Defensive: tolerate blocks missing url/title (skip), and a
+    tool-result block whose .content is not a list.
+    """
+    texts: list[str] = []
+    sources: list[dict] = []
+    for block in getattr(resp, "content", []) or []:
+        btype = getattr(block, "type", None)
+        if btype == "text":
+            texts.append(getattr(block, "text", ""))
+        elif btype == "web_search_tool_result":
+            for item in getattr(block, "content", []) or []:
+                url = getattr(item, "url", None)
+                if not url:
+                    continue
+                sources.append({"url": url, "title": getattr(item, "title", "") or ""})
+    return "".join(texts), sources
+
+
 class ClaudeProvider:
     """Adapter for Claude via the anthropic SDK. fanout = N parallel complete()
     calls (ThreadPoolExecutor); complete() maps tiers to Opus/Sonnet/Haiku."""
@@ -104,6 +211,12 @@ class ClaudeProvider:
         assert tier in TIERS, f"unknown tier {tier}"
         return self.model_override or self.TIER_MODEL[tier]
 
+    def _search_model(self, tier: str) -> str:
+        # web_search_20260209 is documented for opus/sonnet/fable, NOT haiku.
+        # The orchestrator passes tier="cheap" (= haiku) for search; override to
+        # mid (sonnet) which supports the tool. model_override still wins.
+        return self.model_override or self.TIER_MODEL["mid"]
+
     def complete(self, prompt: str, *, system: str = "", model_tier: str = "mid") -> str:
         import anthropic
         msg = self.client.messages.create(
@@ -121,8 +234,47 @@ class ClaudeProvider:
         )
 
     def search(self, subquery: str, *, subquestion_id: str = "Q0", model_tier: str = "cheap") -> dict:
-        raise NotImplementedError(
-            "ClaudeProvider.search (real web_search) lands in Phase 5 stage 2")
+        model = self._search_model(model_tier)
+
+        # --- call 1: web_search, no structured output ---
+        messages = [{"role": "user", "content": _SEARCH_PROMPT.format(subquery=subquery)}]
+        resp = self.client.messages.create(
+            model=model,
+            max_tokens=MAX_TOKENS,
+            tools=[{"type": "web_search_20260209", "name": "web_search"}],
+            messages=messages,
+        )
+        # server-side tool loop may pause after N iterations; resume until terminal
+        guard = 0
+        while getattr(resp, "stop_reason", None) == "pause_turn" and guard < 5:
+            guard += 1
+            messages = [
+                {"role": "user", "content": _SEARCH_PROMPT.format(subquery=subquery)},
+                {"role": "assistant", "content": resp.content},
+            ]
+            resp = self.client.messages.create(
+                model=model,
+                max_tokens=MAX_TOKENS,
+                tools=[{"type": "web_search_20260209", "name": "web_search"}],
+                messages=messages,
+            )
+        answer_text, raw_sources = _collect_call1(resp)
+
+        # --- call 2: structured output, NO web_search (citations + format = 400) ---
+        # call-1 sources/text passed as PLAIN user text, never the tool-result blocks.
+        rendered_sources = "\n".join(
+            f"- {s['title']}: {s['url']}" for s in raw_sources
+        ) or "(no sources found)"
+        call2_prompt = _SIGNALS_PROMPT.format(
+            subquery=subquery, answer=answer_text, sources=rendered_sources
+        )
+        resp2 = self.client.messages.create(
+            model=model,
+            max_tokens=MAX_TOKENS,
+            output_config={"format": {"type": "json_schema", "schema": SIGNALS_SCHEMA}},
+            messages=[{"role": "user", "content": call2_prompt}],
+        )
+        return _parse_call2(resp2, subquestion_id)
 
 
 class OpenAICompatProvider:
