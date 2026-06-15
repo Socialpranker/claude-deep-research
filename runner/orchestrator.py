@@ -36,6 +36,11 @@ try:
 except ImportError:  # run as a script
     from adaptive import run_search_loop, write_deviations
 
+try:
+    from .scoring import compute_total, triangulate, render_triangulation
+except ImportError:  # run as a script
+    from scoring import compute_total, triangulate, render_triangulation
+
 DEPTH_SOURCES = {"shallow": 6, "medium": 14, "deep": 28}
 DEPTH_FANOUT = {"shallow": 0, "medium": 3, "deep": 5}
 GENRE_BY_HINT = [
@@ -161,6 +166,68 @@ class Orchestrator:
 
         rows = ["id,title,url,type,used"]
         rows += [f"{x['id']},Source {x['id']},{x['url']},{x['type']},Y" for x in s.sources]
+        (s.dir / "sources.csv").write_text("\n".join(rows) + "\n", encoding="utf-8")
+
+    # --- Phase 5: scoring + triangulation ---------------------------------
+    def score(self, s: RunState) -> None:
+        if not s.sources:
+            (s.dir / "triangulation.md").write_text(
+                f"# Triangulation — {s.slug}\n\n(no sources)\n", encoding="utf-8")
+            return
+
+        # step 1: per-source scoring (cheap tier).
+        lookup = {x["id"]: x for x in s.sources}
+        payload = [{"id": x["id"], "url": x["url"], "title": x.get("title", ""),
+                    "claim": x.get("claim", "")} for x in s.sources]
+        result = self.p.score(payload, s.hypotheses, model_tier="cheap")
+
+        for item in result.get("sources", []):
+            tgt = lookup.get(item.get("id"))
+            if tgt is None:  # provider returned an id we never sent — ignore
+                continue
+            tgt["credibility"] = item["credibility"]
+            tgt["recency"] = item["recency"]
+            tgt["bias"] = item["bias"]
+            tgt["type"] = item["type"]
+            tgt["hypothesis_evidence"] = item.get("hypothesis_evidence", {})
+            tgt["total"] = compute_total(item)
+
+        # step 2: triangulation over scored sources.
+        s.triangulation = triangulate(
+            [x for x in s.sources if x.get("total") is not None], s.hypotheses)
+
+        # step 3: persist.
+        self._rewrite_sources(s)
+        (s.dir / "triangulation.md").write_text(
+            render_triangulation(s.slug, s.triangulation), encoding="utf-8")
+
+    def _rewrite_sources(self, s: RunState) -> None:
+        srcdir = s.dir / "sources"
+        srcdir.mkdir(exist_ok=True)
+        for i, x in enumerate(s.sources, start=1):
+            ev = x.get("hypothesis_evidence", {})
+            ev_lines = "".join(f"  {h}: {v}\n" for h, v in ev.items())
+            total = x.get("total")
+            fm = (
+                f"---\nid: {x['id']}\nurl: {x['url']}\n"
+                f"title: {x.get('title', 'Source')}\naccess: OPEN\n"
+                f"type: {x.get('type', 'Other')}\n"
+                f"credibility: {x.get('credibility', '')}\n"
+                f"recency: {x.get('recency', '')}\n"
+                f"bias: {x.get('bias', '')}\n"
+                f"total: {total if total is not None else 'null'}\n"
+                f"used: Y\nhypothesis_evidence:\n{ev_lines}"
+                f"---\n{x.get('claim', '')}\n"
+            )
+            (srcdir / f"{i:02d}_{x['id']}.md").write_text(fm, encoding="utf-8")
+
+        rows = ["id,title,url,type,credibility,recency,bias,total,used"]
+        for x in s.sources:
+            total = x.get("total")
+            rows.append(
+                f"{x['id']},Source {x['id']},{x['url']},{x.get('type', 'Other')},"
+                f"{x.get('credibility', '')},{x.get('recency', '')},{x.get('bias', '')},"
+                f"{total if total is not None else ''},Y")
         (s.dir / "sources.csv").write_text("\n".join(rows) + "\n", encoding="utf-8")
 
     # --- Phase 6: synthesis + adversarial ---------------------------------
