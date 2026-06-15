@@ -51,3 +51,21 @@ def triangulate(scored: list[dict], hypotheses: list[str]) -> list[dict]:
             "note": "",
         })
     return result
+
+
+def render_triangulation(topic: str, rows: list[dict]) -> str:
+    """Render the H1..H4 triangulation table for Phase 6 to consume. Under-triangulated
+    hypotheses carry a visible ⚠️ flag so synthesis lowers their confidence."""
+    out = [
+        f"# Triangulation — {topic}",
+        "",
+        "| H | supporting types | contradicting types | flag | note |",
+        "|---|---|---|---|---|",
+    ]
+    for r in rows:
+        flag = "⚠️" if r["under_triangulated"] else "—"
+        out.append(
+            f"| {r['id']} | {r['distinct_types_supporting']} | "
+            f"{r['distinct_types_contradicting']} | {flag} | {r.get('note', '')} |"
+        )
+    return "\n".join(out) + "\n"
