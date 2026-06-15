@@ -112,6 +112,13 @@ def test_extract_carry_forward_defaults_subquestion():
     assert out == [{"subquestion": "?", "carry_forward": "orphan candidate"}]
 
 
+def test_extract_carry_forward_ignores_preamble():
+    text = ("# Deviations\n- carry_forward: stray preamble line\n\n"
+            "## D1\n- subquestion: Q1\n- carry_forward: real one\n")
+    out = extract_carry_forward(text)
+    assert out == [{"subquestion": "Q1", "carry_forward": "real one"}]
+
+
 def _render_sample():
     hyps = [{"id": "H1", "text": "coffee boosts focus",
              "status": "supported", "supporting_types": 3}]
@@ -156,6 +163,19 @@ def test_render_handles_empty():
     assert "_none_" in md
     assert "_no hypotheses recorded_" in md
     assert "# Refresh targets — s" in md  # не падает
+
+
+def test_render_single_blank_before_section_5():
+    md = _render_sample()
+    assert "\n\n\n## 5. Refresh candidates" not in md
+    assert "\n\n## 5. Refresh candidates" in md
+
+
+def test_render_entity_empty_why_shows_dash():
+    entities = [{"domain": "x.com", "url": "https://x.com", "why": ""}]
+    md = render_refresh_targets("s", "medium", [], entities, [], [],
+                                today="2026-06-15")
+    assert "- **Why in scope:** —" in md
 
 
 def test_run_generates_refresh_targets(tmp_path):

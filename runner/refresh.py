@@ -79,8 +79,10 @@ def extract_carry_forward(deviations_text: str) -> list[dict]:
     """Parse deviations.md: each '## D*' block with a carry_forward line becomes a
     refresh candidate. subquestion defaults to '?' if the block lacks one."""
     out = []
+    # blocks[0] is the file preamble (before the first "## D" header) — skip it
+    # so a stray carry_forward line outside any deviation block isn't captured.
     blocks = re.split(r"^## D\d+\b.*$", deviations_text, flags=re.MULTILINE)
-    for block in blocks:
+    for block in blocks[1:]:
         cf = re.search(r"^- carry_forward:\s*(.+)$", block, flags=re.MULTILINE)
         if not cf:
             continue
@@ -139,6 +141,8 @@ def render_refresh_targets(slug: str, depth: str, hypotheses: list[dict],
     else:
         out += ["_no hypotheses recorded_", ""]
 
+    if out and out[-1] == "":
+        out.pop()
     out += ["", "## 5. Refresh candidates (carry-forward)"]
     if carry:
         for c in carry:
