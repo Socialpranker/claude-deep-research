@@ -59,3 +59,17 @@ def test_verify_survives_subprocess_oserror(tmp_path, monkeypatch):
     o.verify(s)  # must NOT raise
     report = _report_path(s).read_text(encoding="utf-8")
     assert "verification unavailable" in report
+
+
+def test_run_invokes_verify_offline(tmp_path, monkeypatch):
+    # keep it offline: checker is a no-op producing no json -> 'unavailable'
+    monkeypatch.setattr(subprocess, "run",
+                        lambda cmd, **kw: subprocess.CompletedProcess(cmd, 0))
+    o = Orchestrator(DryRunProvider())
+    out_dir = o.run("does X cause Y", "medium", tmp_path)
+    import datetime as dt
+    reports = list(out_dir.glob("*_*.md"))
+    report = next(p for p in reports if dt.date.today().isoformat() in p.name)
+    text = report.read_text(encoding="utf-8")
+    assert "pending — run eval/check_citations.py" not in text
+    assert "Citation integrity" in text

@@ -338,6 +338,7 @@ class Orchestrator:
         self.search(s)
         self.score(s)
         self.synthesize(s)
+        self.verify(s)
         return s.dir
 
 
