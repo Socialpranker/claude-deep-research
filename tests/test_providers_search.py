@@ -84,3 +84,16 @@ def test_openai_search_not_implemented_yet():
     p = OpenAICompatProvider(client=object())
     with pytest.raises(NotImplementedError):
         p.search("x")
+
+
+def test_claude_search_model_is_mid_not_cheap():
+    # Haiku (cheap) is not in the web_search_20260209 support list; search() must
+    # resolve to mid (sonnet) regardless of the tier the orchestrator passes.
+    p = ClaudeProvider(client=object())
+    assert p._search_model("cheap") == "claude-sonnet-4-6"
+    assert p._search_model("strong") == "claude-sonnet-4-6"
+
+
+def test_claude_search_model_override_wins():
+    p = ClaudeProvider(client=object(), model_override="claude-opus-4-8")
+    assert p._search_model("cheap") == "claude-opus-4-8"

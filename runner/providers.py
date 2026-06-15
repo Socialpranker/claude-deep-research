@@ -142,6 +142,12 @@ class ClaudeProvider:
         assert tier in TIERS, f"unknown tier {tier}"
         return self.model_override or self.TIER_MODEL[tier]
 
+    def _search_model(self, tier: str) -> str:
+        # web_search_20260209 is documented for opus/sonnet/fable, NOT haiku.
+        # The orchestrator passes tier="cheap" (= haiku) for search; override to
+        # mid (sonnet) which supports the tool. model_override still wins.
+        return self.model_override or self.TIER_MODEL["mid"]
+
     def complete(self, prompt: str, *, system: str = "", model_tier: str = "mid") -> str:
         import anthropic
         msg = self.client.messages.create(
