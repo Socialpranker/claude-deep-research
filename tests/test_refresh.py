@@ -13,6 +13,7 @@ def test_extract_hypotheses_maps_status():
     assert out[0] == {"id": "H1", "text": "coffee boosts focus",
                       "status": "supported", "supporting_types": 3}
     assert out[1]["status"] == "inconclusive"
+    assert out[1]["supporting_types"] == 1
 
 
 def test_extract_hypotheses_no_triangulation_is_inconclusive():
