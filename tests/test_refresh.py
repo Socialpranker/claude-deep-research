@@ -66,5 +66,11 @@ def test_extract_numbers_keeps_data_domain_even_without_digit():
     assert len(out) == 1
 
 
+def test_extract_numbers_skips_no_digit_no_domain():
+    out = extract_numbers([{"id": "s01", "url": "https://blog.example.com/post",
+                            "claim": "qualitative insight only"}])
+    assert out == []
+
+
 def test_extract_numbers_empty():
     assert extract_numbers([]) == []
